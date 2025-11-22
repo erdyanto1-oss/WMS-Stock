@@ -34,17 +34,15 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-    <!-- Dynamic Manifest Script (Kunci Perbaikan PWA) -->
+    <!-- Dynamic Manifest Script (PWA) -->
     <script>
-        // Kita membuat file manifest.json secara virtual menggunakan Javascript
-        // Ini lebih stabil daripada menaruhnya di tag HTML langsung
         const logoUrl = "https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X";
         
         const manifestData = {
             "name": "SNM Stock WMS",
             "short_name": "SNM Stock",
-            "start_url": window.location.href, // Otomatis ambil URL saat ini
-            "display": "standalone", // Ini yang bikin FULL SCREEN
+            "start_url": window.location.href,
+            "display": "standalone",
             "background_color": "#ffffff",
             "theme_color": "#2563eb",
             "orientation": "portrait",
@@ -66,7 +64,6 @@
         const blob = new Blob([stringManifest], {type: 'application/json'});
         const manifestURL = URL.createObjectURL(blob);
         
-        // Suntikkan ke head
         const link = document.createElement('link');
         link.rel = 'manifest';
         link.href = manifestURL;
@@ -168,7 +165,6 @@
         const appId = 'wms-nsm-production'; 
         const COLLECTION_PATH = (name) => `wms_data/${appId}/${name}`;
         
-        // Menggunakan direct link Google yang lebih stabil untuk gambar
         const LOGO_URL = "https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X";
 
         const getFormattedDate = (timestamp) => {
@@ -176,6 +172,12 @@
                 day: '2-digit', month: 'short', year: '2-digit',
                 hour: '2-digit', minute: '2-digit'
             }).format(new Date(timestamp));
+        };
+
+        // HELPER: FORMAT ANGKA (Ribuan dengan Titik)
+        const formatNumber = (num) => {
+            if (num === null || num === undefined) return '0';
+            return new Intl.NumberFormat('id-ID').format(num);
         };
 
         const useFirestoreCollection = (collectionName, firebaseUser, isAuthReady, onPermissionError) => {
@@ -353,12 +355,21 @@
                 return () => { isMounted = false; };
             }, []);
 
+            // LOGIKA MEMBUAT ADMIN PERTAMA KALI
             useEffect(() => {
                 if (authReady && firebaseUser && !loadingUsers) {
                     const ensureData = async () => {
                         try {
                             const adminExists = users.some(u => u.username === 'admin');
-                            if (!adminExists) { await db.collection(COLLECTION_PATH('users')).add({ username: 'admin', password: '123', name: 'Super Admin', role: 'admin', createdAt: Date.now() }); }
+                            if (!adminExists) { 
+                                await db.collection(COLLECTION_PATH('users')).add({ 
+                                    username: 'admin', 
+                                    password: 'snm123', 
+                                    name: 'Super Admin', 
+                                    role: 'admin', 
+                                    createdAt: Date.now() 
+                                }); 
+                            }
                             if (locations.length === 0) {
                                 const locRef = db.collection(COLLECTION_PATH('locations'));
                                 const snap = await locRef.get(); 
@@ -464,10 +475,33 @@
 
             const handleScanLogic = (query) => {
                 const q = query.toUpperCase().trim();
-                const item = inventory.find(i=>i.sku===q || i.barcode===q || i.name.toUpperCase().includes(q));
-                if(item) { setScanResult({type:'item', data:item}); } else {
-                    const loc = locations.find(l=>l.code===q);
-                    if(loc) { setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); } else { setScanResult({type:'not_found'}); }
+                
+                // REVISI LOGIKA:
+                // 1. Cari SEMUA item yang cocok, bukan hanya yang pertama ketemu
+                const matchingItems = inventory.filter(i => i.sku === q || i.barcode === q || i.name.toUpperCase().includes(q));
+                
+                if(matchingItems.length > 0) { 
+                    // Agregasi Data
+                    const totalQty = matchingItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
+                    const locationsList = matchingItems.map(item => ({ location: item.location, qty: item.qty }));
+                    
+                    setScanResult({
+                        type: 'item', 
+                        data: {
+                            name: matchingItems[0].name, // Pakai nama dari item pertama
+                            sku: matchingItems[0].sku,   // Pakai SKU dari item pertama
+                            totalQty: totalQty,
+                            locations: locationsList
+                        }
+                    }); 
+                } else {
+                    // Jika bukan barang, cek apakah Lokasi
+                    const loc = locations.find(l => l.code === q);
+                    if(loc) { 
+                        setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); 
+                    } else { 
+                        setScanResult({type:'not_found'}); 
+                    }
                 }
             };
 
@@ -623,15 +657,15 @@
                         <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl animate-slide-up z-10">
                             <div className="text-center mb-8">
                                 <div className="flex items-center justify-center mx-auto mb-4">
-                                    {/* LOGO DISPLAY - With Fallback */}
+                                    {/* LOGO DISPLAY */}
                                     <img 
                                         src={LOGO_URL} 
                                         alt="SNM Stock Logo" 
                                         className="h-28 w-auto object-contain drop-shadow-md"
                                         onError={(e) => {
-                                            e.target.onerror = null; // prevent loop
-                                            e.target.style.display = 'none'; // hide image
-                                            e.target.nextSibling.style.display = 'block'; // show fallback text
+                                            e.target.onerror = null;
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'block';
                                         }} 
                                     />
                                     <h1 className="text-4xl font-extrabold text-blue-600 tracking-tight hidden">SNM Stock</h1>
@@ -639,9 +673,28 @@
                                 <p className="text-slate-500 text-sm font-bold">Warehouse Management System</p>
                             </div>
                             {loginError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold flex items-center gap-2 animate-fade-in"><AlertTriangle size={16}/> {loginError}</div>}
+                            
                             <form onSubmit={handleLogin} className="space-y-4">
-                                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Username</label><input type="text" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" placeholder="admin" value={loginForm.username} onChange={e=>setLoginForm({...loginForm, username:e.target.value})} /></div>
-                                <div><label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Password</label><input type="password" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" placeholder="123" value={loginForm.password} onChange={e=>setLoginForm({...loginForm, password:e.target.value})} /></div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Username</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" 
+                                        placeholder="Masukkan Username" 
+                                        value={loginForm.username} 
+                                        onChange={e=>setLoginForm({...loginForm, username:e.target.value})} 
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Password</label>
+                                    <input 
+                                        type="password" 
+                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" 
+                                        placeholder="Masukkan Password" 
+                                        value={loginForm.password} 
+                                        onChange={e=>setLoginForm({...loginForm, password:e.target.value})} 
+                                    />
+                                </div>
                                 <button disabled={loadingUsers} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex justify-center">{loadingUsers ? <Loader2 className="animate-spin"/> : 'Masuk'}</button>
                             </form>
                             <p className="text-center text-xs text-slate-400 mt-6">Pastikan internet lancar untuk memuat data.</p>
@@ -705,8 +758,6 @@
                         </header>
 
                         <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-6 custom-scrollbar">
-                            {/* ... (rest of the main content) */}
-                            {/* Content truncated for brevity but logic remains identical to previous working version */}
                             <div className="max-w-5xl mx-auto">
                                 {/* DASHBOARD */}
                                 {activeTab === 'dashboard' && (
@@ -719,8 +770,8 @@
                                                     if(locItems.length === 0) return null;
                                                     return (
                                                         <div key={loc.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                                            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center"><div><h4 className="font-bold text-slate-700 text-sm">{loc.name}</h4><p className="text-[10px] font-mono text-slate-400">KODE: {loc.code}</p></div><span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-lg">{locItems.reduce((a,b)=>a+b.qty,0)} Unit</span></div>
-                                                            <div className="divide-y divide-slate-50">{locItems.map(item => (<div key={item.id} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 transition-colors"><div><div className="font-bold text-slate-800 text-sm">{item.name}</div><div className="text-xs font-mono text-slate-400">{item.sku}</div></div><div className={`text-sm font-bold px-2.5 py-1 rounded-lg ${item.qty < 10 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.qty}</div></div>))}</div>
+                                                            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center"><div><h4 className="font-bold text-slate-700 text-sm">{loc.name}</h4><p className="text-[10px] font-mono text-slate-400">KODE: {loc.code}</p></div><span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-lg">{formatNumber(locItems.reduce((a,b)=>a+b.qty,0))} Unit</span></div>
+                                                            <div className="divide-y divide-slate-50">{locItems.map(item => (<div key={item.id} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 transition-colors"><div><div className="font-bold text-slate-800 text-sm">{item.name}</div><div className="text-xs font-mono text-slate-400">{item.sku}</div></div><div className={`text-sm font-bold px-2.5 py-1 rounded-lg ${item.qty < 10 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{formatNumber(item.qty)}</div></div>))}</div>
                                                         </div>
                                                     )
                                                 })}
@@ -728,7 +779,7 @@
                                             <div className="space-y-4">
                                                 <h3 className="font-bold text-slate-800 flex items-center gap-2"><Activity size={18} className="text-orange-500"/> Transaksi Hari Ini</h3>
                                                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 min-h-[200px]">
-                                                    {todayLogs.length === 0 ? <div className="text-center py-8 text-slate-400"><div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2"><Calendar size={20}/></div><p className="text-xs">Belum ada transaksi hari ini</p></div> : <div className="space-y-3">{todayLogs.map(log => (<div key={log.id} className="flex items-start gap-3 pb-3 border-b border-slate-50 last:border-0 last:pb-0"><div className={`p-1.5 rounded-lg mt-0.5 ${log.type==='in'?'bg-emerald-100 text-emerald-600': log.type==='out'?'bg-orange-100 text-orange-600':'bg-blue-100 text-blue-600'}`}>{log.type==='in'?<ArrowDownCircle size={14}/>: log.type==='out'?<ArrowUpCircle size={14}/>:<ArrowRightLeft size={14}/>}</div><div className="flex-1 min-w-0"><div className="flex justify-between items-start"><p className="font-bold text-slate-700 text-xs truncate">{log.itemName}</p><span className={`text-xs font-bold ml-2 ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{log.qty}</span></div><p className="text-[10px] text-slate-400 mt-0.5">{log.date.split(',')[1]} • {log.user}</p></div></div>))}</div>}
+                                                    {todayLogs.length === 0 ? <div className="text-center py-8 text-slate-400"><div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2"><Calendar size={20}/></div><p className="text-xs">Belum ada transaksi hari ini</p></div> : <div className="space-y-3">{todayLogs.map(log => (<div key={log.id} className="flex items-start gap-3 pb-3 border-b border-slate-50 last:border-0 last:pb-0"><div className={`p-1.5 rounded-lg mt-0.5 ${log.type==='in'?'bg-emerald-100 text-emerald-600': log.type==='out'?'bg-orange-100 text-orange-600':'bg-blue-100 text-blue-600'}`}>{log.type==='in'?<ArrowDownCircle size={14}/>: log.type==='out'?<ArrowUpCircle size={14}/>:<ArrowRightLeft size={14}/>}</div><div className="flex-1 min-w-0"><div className="flex justify-between items-start"><p className="font-bold text-slate-700 text-xs truncate">{log.itemName}</p><span className={`text-xs font-bold ml-2 ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{formatNumber(log.qty)}</span></div><p className="text-[10px] text-slate-400 mt-0.5">{log.date.split(',')[1]} • {log.user}</p></div></div>))}</div>}
                                                 </div>
                                             </div>
                                         </div>
@@ -739,8 +790,8 @@
                                 {activeTab === 'packing' && (
                                     <div className="space-y-6 animate-fade-in">
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Single Hari Ini</p><p className="text-2xl font-extrabold text-blue-600">{totalPackedSingle}</p></div>
-                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Bundle Hari Ini</p><p className="text-2xl font-extrabold text-purple-600">{totalPackedBundle}</p></div>
+                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Single Hari Ini</p><p className="text-2xl font-extrabold text-blue-600">{formatNumber(totalPackedSingle)}</p></div>
+                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Bundle Hari Ini</p><p className="text-2xl font-extrabold text-purple-600">{formatNumber(totalPackedBundle)}</p></div>
                                         </div>
                                         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                                             <div className="bg-slate-800 p-4 text-white flex justify-between items-center"><h3 className="font-bold flex items-center gap-2"><ClipboardList size={18}/> Worksheet Packing</h3><p className="text-xs opacity-70 font-mono">{getFormattedDate(Date.now()).split(',')[0]}</p></div>
@@ -758,7 +809,7 @@
                                                                         <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
                                                                     </div>
                                                                     <div className="text-right">
-                                                                         <span className="text-[10px] bg-slate-100 px-2 py-1 rounded-lg text-slate-500 font-bold">Stok: {item.totalQty}</span>
+                                                                         <span className="text-[10px] bg-slate-100 px-2 py-1 rounded-lg text-slate-500 font-bold">Stok: {formatNumber(item.totalQty)}</span>
                                                                     </div>
                                                                 </div>
                                                                 <div className="grid grid-cols-3 gap-2 items-center">
@@ -793,7 +844,7 @@
                                                             <span className="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 mt-1 inline-block">{item.sku}</span>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.totalQty<10?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{item.totalQty} Total</span>
+                                                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.totalQty<10?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{formatNumber(item.totalQty)} Total</span>
                                                         </div>
                                                     </div>
                                                     
@@ -801,7 +852,7 @@
                                                     <div className="flex flex-wrap gap-2 mb-3">
                                                         {item.locations.map(loc => (
                                                             <span key={loc.id} className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
-                                                                <MapPin size={10}/> {loc.code}: {loc.qty}
+                                                                <MapPin size={10}/> {loc.code}: {formatNumber(loc.qty)}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -831,7 +882,36 @@
                                         </div>
                                         {scanResult && (
                                             <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-5 animate-slide-up">
-                                                {scanResult.type === 'item' ? <div className="text-center"><h3 className="text-lg font-bold text-slate-800">{scanResult.data.name}</h3><p className="font-mono text-slate-400 text-sm mb-4">{scanResult.data.sku}</p><div className="grid grid-cols-2 gap-3"><div className="bg-slate-50 p-3 rounded-xl"><div className="text-[10px] text-slate-400 uppercase font-bold">Lokasi</div><div className="text-lg font-bold text-slate-800">{scanResult.data.location}</div></div><div className="bg-blue-50 p-3 rounded-xl"><div className="text-[10px] text-blue-400 uppercase font-bold">Stok</div><div className="text-lg font-bold text-blue-700">{scanResult.data.qty}</div></div></div></div> : scanResult.type === 'location' ? <div><div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100"><div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center"><Warehouse size={20}/></div><div><h3 className="font-bold text-slate-800">{scanResult.data.name}</h3><p className="text-xs text-slate-500 font-mono">{scanResult.data.code}</p></div></div><div className="space-y-2">{scanResult.items.map(i=>(<div key={i.id} className="flex justify-between p-2 bg-slate-50 rounded-lg"><span className="text-slate-700 text-sm font-medium">{i.name}</span><span className="font-bold text-blue-600 text-sm">{i.qty}</span></div>))}</div></div> : <div className="text-center py-4 text-slate-400"><AlertTriangle size={24} className="mx-auto mb-1 opacity-50"/><p className="text-sm">Data tidak ditemukan</p></div>}
+                                                {/* UI SCANNER DIPERBAIKI UNTUK MENAMPILKAN TOTAL GLOBAL & RINCIAN PER LOKASI */}
+                                                {scanResult.type === 'item' ? (
+                                                    <div className="text-center">
+                                                        <h3 className="text-lg font-bold text-slate-800">{scanResult.data.name}</h3>
+                                                        <p className="font-mono text-slate-400 text-sm mb-4">{scanResult.data.sku}</p>
+                                                        
+                                                        <div className="mb-6">
+                                                            <span className="bg-blue-100 text-blue-700 px-6 py-3 rounded-2xl text-3xl font-extrabold block w-fit mx-auto">
+                                                                {formatNumber(scanResult.data.totalQty)}
+                                                                <span className="text-sm font-bold ml-2 text-blue-500">Total</span>
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="space-y-2 text-left">
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase ml-1">Rincian Lokasi:</p>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                {scanResult.data.locations.map((loc, idx) => (
+                                                                    <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col items-center">
+                                                                        <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Lokasi {loc.location}</div>
+                                                                        <div className="text-lg font-bold text-slate-800">{formatNumber(loc.qty)}</div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : scanResult.type === 'location' ? (
+                                                    <div><div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100"><div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center"><Warehouse size={20}/></div><div><h3 className="font-bold text-slate-800">{scanResult.data.name}</h3><p className="text-xs text-slate-500 font-mono">{scanResult.data.code}</p></div></div><div className="space-y-2">{scanResult.items.map(i=>(<div key={i.id} className="flex justify-between p-2 bg-slate-50 rounded-lg"><span className="text-slate-700 text-sm font-medium">{i.name}</span><span className="font-bold text-blue-600 text-sm">{formatNumber(i.qty)}</span></div>))}</div></div>
+                                                ) : (
+                                                    <div className="text-center py-4 text-slate-400"><AlertTriangle size={24} className="mx-auto mb-1 opacity-50"/><p className="text-sm">Data tidak ditemukan</p></div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -852,7 +932,7 @@
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Item Barang</label>
                                                     <select className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm" value={transaction.itemId} onChange={e=>{const it=inventory.find(i=>i.id==e.target.value); setTransaction({...transaction, itemId:e.target.value, targetLocation:it?it.location:''})}}>
                                                         <option value="">-- Pilih Barang --</option>
-                                                        {inventory.map(i=><option key={i.id} value={i.id}>{i.name} (Stok: {i.qty} @ {i.location})</option>)}
+                                                        {inventory.map(i=><option key={i.id} value={i.id}>{i.name} (Stok: {formatNumber(i.qty)} @ {i.location})</option>)}
                                                     </select>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
@@ -933,7 +1013,7 @@
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
                                                             <p className="font-bold text-slate-700 text-sm truncate">{log.itemName}</p>
-                                                            <span className={`text-xs font-bold ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{log.qty}</span>
+                                                            <span className={`text-xs font-bold ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{formatNumber(log.qty)}</span>
                                                         </div>
                                                         <div className="flex justify-between mt-1">
                                                             <p className="text-[10px] text-slate-400">{log.date} • {log.user}</p>
@@ -994,7 +1074,7 @@
                     <Modal isOpen={modals.loc} title="Lokasi Baru" onClose={()=>setModals(p=>({...p, loc:false}))}><form onSubmit={async (e)=>{e.preventDefault(); if(locations.some(l=>l.code===newLocation.code)) return showAlert("Kode Lokasi sudah ada!", "Error"); await db.collection(COLLECTION_PATH('locations')).add(newLocation); setNewLocation({code:'', name:''}); setModals(p=>({...p, loc:false})); }} className="space-y-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Kode Rak</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 uppercase text-sm" value={newLocation.code} onChange={e=>setNewLocation({...newLocation, code:e.target.value.toUpperCase()})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Nama Area</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newLocation.name} onChange={e=>setNewLocation({...newLocation, name:e.target.value})}/></div><button className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold shadow-lg text-sm mt-2">Simpan</button></form></Modal>
                     <Modal isOpen={modals.users} title="User Baru" onClose={()=>setModals(p=>({...p, users:false}))}><form onSubmit={async (e) => { e.preventDefault(); if(users.some(u=>u.username === newUser.username)) return showAlert("Username dipakai", "Error", "warning"); await db.collection(COLLECTION_PATH('users')).add(newUser); setNewUser({ username: '', password: '', name: '', role: 'staff' }); setModals(p=>({...p, users: false})); }} className="space-y-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Username</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.username} onChange={e=>setNewUser({...newUser, username:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Password</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Nama Lengkap</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Role</label><select className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})}><option value="staff">Staff Gudang</option><option value="admin">Admin</option></select></div><button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm mt-2">Tambah User</button></form></Modal>
                     <Modal isOpen={modals.profile} title="Keamanan Akun" onClose={()=>setModals(p=>({...p, profile:false}))}><form onSubmit={async (e) => { e.preventDefault(); if (profileData.username !== currentUser.username && users.some(u => u.username.toLowerCase() === profileData.username.toLowerCase())) { return showAlert("Username sudah dipakai user lain.", "Gagal", "warning"); } await db.collection(COLLECTION_PATH('users')).doc(currentUser.id).update({ username: profileData.username, password: profileData.password }); setModals(p=>({...p, profile: false})); showAlert("Login (Username/Password) diperbarui", "Sukses", "success"); }} className="space-y-4"><div className="text-center mb-4"><div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto shadow-lg mb-2">{profileData.name.charAt(0)}</div><div className="flex items-center justify-center gap-1 text-emerald-600 bg-emerald-50 w-fit mx-auto px-2 py-1 rounded-full"><ShieldCheck size={12} /><p className="text-[10px] font-bold uppercase tracking-wide">Akun Terverifikasi</p></div></div><div><label className="text-[10px] font-bold text-slate-400 uppercase flex justify-between">Nama Lengkap (PIC) <Lock size={12}/></label><input disabled className="w-full p-3 bg-slate-200 text-slate-500 rounded-xl border border-slate-200 text-sm font-bold cursor-not-allowed" value={profileData.name} /></div><div className="pt-2 space-y-4 border-t border-slate-100"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Username Login</label><input required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:border-blue-500 outline-none transition-colors" value={profileData.username} onChange={e=>setProfileData({...profileData, username:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Password Baru</label><input required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:border-blue-500 outline-none transition-colors" value={profileData.password} onChange={e=>setProfileData({...profileData, password:e.target.value})}/></div></div><div className="pt-4 flex flex-col gap-3"><button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm active:scale-95 transition-transform">Simpan Perubahan</button><button type="button" onClick={() => setModals(p => ({...p, profile: false, confirm: { isOpen: true, message: "Keluar dari aplikasi?", onConfirm: () => { localStorage.removeItem('snm_active_user'); setCurrentUser(null); setIsSidebarOpen(false); }}}))} className="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold text-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"><LogOut size={16}/> Keluar Aplikasi</button></div></form></Modal>
-                    <Modal isOpen={!!selectedLocation} title={selectedLocation?.code} onClose={()=>setSelectedLocation(null)} type="info"><div className="space-y-3"><h5 className="font-bold text-slate-700 text-xs uppercase">Isi Rak: {selectedLocation?.name}</h5><div className="max-h-60 overflow-y-auto custom-scrollbar border rounded-xl border-slate-100">{inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <p className="p-4 text-center text-slate-400 italic text-xs">Rak Kosong</p> : inventory.filter(i=>i.location===selectedLocation?.code).map(i=>(<div key={i.id} className="p-2.5 border-b border-slate-50 flex justify-between items-center last:border-0"><div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono">{i.sku}</p></div><div className="flex gap-2 items-center"><span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">{i.qty} Unit</span></div></div>))}</div></div></Modal>
+                    <Modal isOpen={!!selectedLocation} title={selectedLocation?.code} onClose={()=>setSelectedLocation(null)} type="info"><div className="space-y-3"><h5 className="font-bold text-slate-700 text-xs uppercase">Isi Rak: {selectedLocation?.name}</h5><div className="max-h-60 overflow-y-auto custom-scrollbar border rounded-xl border-slate-100">{inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <p className="p-4 text-center text-slate-400 italic text-xs">Rak Kosong</p> : inventory.filter(i=>i.location===selectedLocation?.code).map(i=>(<div key={i.id} className="p-2.5 border-b border-slate-50 flex justify-between items-center last:border-0"><div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono">{i.sku}</p></div><div className="flex gap-2 items-center"><span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">{formatNumber(i.qty)} Unit</span></div></div>))}</div></div></Modal>
 
                     <Modal isOpen={!!moveItem} title="Pindah / Transfer" onClose={()=>setMoveItem(null)}>
                         {moveItem && (
@@ -1004,7 +1084,7 @@
                                     <p className="font-bold text-slate-800">{moveItem.name}</p>
                                     <p className="text-xs text-slate-500 font-mono">{moveItem.sku}</p>
                                     <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-500">
-                                        Total Global: {moveItem.totalQty} Unit
+                                        Total Global: {formatNumber(moveItem.totalQty)} Unit
                                     </div>
                                 </div>
                                 
@@ -1013,7 +1093,7 @@
                                     <select required className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none font-bold" value={moveSourceId} onChange={e=>{ setMoveSourceId(e.target.value); setMoveQty(''); }}>
                                         <option value="">-- Pilih Sumber --</option>
                                         {availableSources.map(s => (
-                                            <option key={s.id} value={s.id}>{s.location} (Sisa: {s.qty})</option>
+                                            <option key={s.id} value={s.id}>{s.location} (Sisa: {formatNumber(s.qty)})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -1041,7 +1121,7 @@
                                             disabled={!selectedSourceItem}
                                         />
                                         <p className="text-[9px] text-slate-400 text-right mt-1">
-                                            {selectedSourceItem ? `Max: ${selectedSourceItem.qty}` : '-'}
+                                            {selectedSourceItem ? `Max: ${formatNumber(selectedSourceItem.qty)}` : '-'}
                                         </p>
                                     </div>
                                 </div>

@@ -74,7 +74,7 @@
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
         #reader { width: 100%; border-radius: 1rem; overflow: hidden; background: #000; }
-        #reader video { object-fit: cover; border-radius: 1rem; }
+        #reader video { object-fit: cover; border-radius: 1rem; width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body class="h-screen overflow-hidden bg-slate-50 text-slate-900">
@@ -95,7 +95,7 @@
         } from 'https://esm.sh/lucide-react@0.292.0';
 
         // ==========================================
-        // KONFIGURASI FIREBASE (Dari User)
+        // KONFIGURASI FIREBASE
         // ==========================================
         const firebaseConfig = {
           apiKey: "AIzaSyBhsBxRsq9bUJ8lY2YwVCM7Wh8l0HWSrt0",
@@ -106,7 +106,6 @@
           appId: "1:241652922316:web:316e6376ecd23078498f69"
         };
         
-        // Initialize Firebase
         if (!firebase.apps.length) {
             try {
                 firebase.initializeApp(firebaseConfig);
@@ -116,7 +115,6 @@
         }
         const auth = firebase.auth();
         const db = firebase.firestore();
-        
         const appId = 'wms-nsm-production'; 
         const COLLECTION_PATH = (name) => `wms_data/${appId}/${name}`;
         
@@ -127,11 +125,9 @@
             }).format(new Date(timestamp));
         };
 
-        // --- HOOKS ---
         const useFirestoreCollection = (collectionName, firebaseUser, isAuthReady, onPermissionError) => {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
-
             useEffect(() => {
                 if (!firebaseUser || !isAuthReady) return;
                 const path = COLLECTION_PATH(collectionName);
@@ -155,11 +151,9 @@
                 }
                 return () => unsubscribe && unsubscribe();
             }, [firebaseUser, collectionName, isAuthReady]);
-
             return { data, loading };
         };
 
-        // --- COMPONENTS ---
         const Modal = ({ isOpen, title, children, onClose, type = 'default' }) => {
             if (!isOpen) return null;
             const colors = {
@@ -168,7 +162,6 @@
                 success: 'bg-emerald-50 text-emerald-700',
                 info: 'bg-blue-50 text-blue-800'
             };
-
             return (
                 <div className="fixed inset-0 bg-slate-900/70 z-[60] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm animate-fade-in" style={{zIndex: 100}}>
                     <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh] animate-slide-up sm:animate-fade-in">
@@ -197,7 +190,7 @@
                             <Lock size={40} />
                         </div>
                         <h1 className="text-2xl font-bold mb-2">Akses Database Ditolak</h1>
-                        <p className="text-slate-400 text-sm">Aplikasi masih terblokir. Pastikan Anda sudah menyimpan Rules dengan benar (tanpa teks instruksi).</p>
+                        <p className="text-slate-400 text-sm">Aplikasi masih terblokir. Pastikan Anda sudah menyimpan Rules dengan benar.</p>
                     </div>
                     <button onClick={()=>window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
                         <RefreshCw size={20}/> Coba Refresh
@@ -213,15 +206,11 @@
             </button>
         );
 
-        // --- MAIN APP ---
         function App() {
             const [authReady, setAuthReady] = useState(false);
             const [firebaseUser, setFirebaseUser] = useState(null);
             const [permissionError, setPermissionError] = useState(false);
-            
-            const handlePermissionError = () => {
-                if (!permissionError) setPermissionError(true);
-            };
+            const handlePermissionError = () => { if (!permissionError) setPermissionError(true); };
 
             const { data: users, loading: loadingUsers } = useFirestoreCollection('users', firebaseUser, authReady, handlePermissionError);
             const { data: inventory, loading: loadingInv } = useFirestoreCollection('inventory', firebaseUser, authReady, handlePermissionError);
@@ -268,9 +257,7 @@
             const groupedInventory = useMemo(() => {
                 const groups = {};
                 inventory.forEach(item => {
-                    if (!groups[item.sku]) {
-                        groups[item.sku] = { ...item, totalQty: 0, locations: [] };
-                    }
+                    if (!groups[item.sku]) { groups[item.sku] = { ...item, totalQty: 0, locations: [] }; }
                     groups[item.sku].totalQty += (parseInt(item.qty) || 0);
                     groups[item.sku].locations.push({ id: item.id, code: item.location, qty: item.qty });
                 });
@@ -289,8 +276,7 @@
                             if (savedUser) setCurrentUser(JSON.parse(savedUser));
                         }
                     } catch (error) {
-                        console.error("Auth Error:", error);
-                        setModals(p => ({...p, alert: {isOpen: true, title: "Auth Error", message: "Gagal koneksi ke database. Cek konsol.", type: "danger"}}));
+                        setModals(p => ({...p, alert: {isOpen: true, title: "Auth Error", message: "Gagal koneksi database.", type: "danger"}}));
                     }
                 };
                 initAuth();
@@ -302,21 +288,13 @@
                     const ensureData = async () => {
                         try {
                             const adminExists = users.some(u => u.username === 'admin');
-                            if (!adminExists) {
-                                await db.collection(COLLECTION_PATH('users')).add({ username: 'admin', password: '123', name: 'Super Admin', role: 'admin', createdAt: Date.now() });
-                            }
+                            if (!adminExists) { await db.collection(COLLECTION_PATH('users')).add({ username: 'admin', password: '123', name: 'Super Admin', role: 'admin', createdAt: Date.now() }); }
                             if (locations.length === 0) {
                                 const locRef = db.collection(COLLECTION_PATH('locations'));
                                 const snap = await locRef.get(); 
-                                if(snap.empty) {
-                                    await locRef.add({ code: 'A-01', name: 'Rak Depan' });
-                                    await locRef.add({ code: 'B-02', name: 'Gudang Belakang' });
-                                }
+                                if(snap.empty) { await locRef.add({ code: 'A-01', name: 'Rak Depan' }); await locRef.add({ code: 'B-02', name: 'Gudang Belakang' }); }
                             }
-                        } catch (e) { 
-                            console.error("Seed error", e);
-                            if (e.code === 'permission-denied') handlePermissionError();
-                        }
+                        } catch (e) { if (e.code === 'permission-denied') handlePermissionError(); }
                     };
                     ensureData();
                 }
@@ -351,36 +329,82 @@
             };
 
             const SidebarLink = ({ tab, icon: Icon, label }) => (
-                <button 
-                    onClick={() => navigateTo(tab)} 
-                    className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${activeTab === tab ? 'bg-blue-50 text-blue-600 font-bold shadow-sm' : 'text-slate-500 hover:bg-slate-50 font-medium'}`}
-                >
+                <button onClick={() => navigateTo(tab)} className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${activeTab === tab ? 'bg-blue-50 text-blue-600 font-bold shadow-sm' : 'text-slate-500 hover:bg-slate-50 font-medium'}`}>
                     <Icon size={20} className={activeTab === tab ? "text-blue-600" : "text-slate-400"} strokeWidth={activeTab === tab ? 2.5 : 2} />
                     <span className="text-sm">{label}</span>
                 </button>
             );
 
+            // --- FIXED SCANNER LOGIC FOR MOBILE ---
             const stopScanner = async () => {
-                if (html5QrCodeRef.current) {
-                    try { if (html5QrCodeRef.current.isScanning) await html5QrCodeRef.current.stop(); html5QrCodeRef.current.clear(); } catch (err) {}
-                    html5QrCodeRef.current = null;
-                }
+                // Stop logic handled mostly by the effect cleanup, but we set state here
                 setIsScanning(false);
             };
 
             const startScanner = () => {
+                // Just trigger the state, useEffect handles the heavy lifting
                 setIsScanning(true);
-                setTimeout(() => {
-                    if (!document.getElementById("reader")) return;
-                    if (html5QrCodeRef.current) { try { html5QrCodeRef.current.clear(); } catch(e){} }
-                    const html5QrCode = new Html5Qrcode("reader");
-                    html5QrCodeRef.current = html5QrCode;
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-                    html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
-                        setScanQuery(decodedText); stopScanner(); handleScanLogic(decodedText);
-                    }, () => {}).catch(err => { setIsScanning(false); showAlert("Kamera tidak dapat diakses.", "Error Kamera", "danger"); });
-                }, 300);
             };
+
+            // Effect to handle Scanner Lifecycle
+            useEffect(() => {
+                let html5QrCode;
+                
+                if (isScanning) {
+                    const init = async () => {
+                        // Wait slightly longer for Mobile DOM to be ready
+                        await new Promise(r => setTimeout(r, 500));
+                        
+                        if (!document.getElementById("reader")) {
+                            console.error("Reader element not found");
+                            setIsScanning(false);
+                            return;
+                        }
+
+                        try {
+                            html5QrCode = new Html5Qrcode("reader");
+                            html5QrCodeRef.current = html5QrCode;
+                            
+                            await html5QrCode.start(
+                                { facingMode: "environment" }, 
+                                { fps: 10, qrbox: { width: 250, height: 250 } }, // Removed aspectRatio to fix mobile distortion
+                                (decodedText) => {
+                                    setScanQuery(decodedText);
+                                    stopScanner();
+                                    handleScanLogic(decodedText);
+                                },
+                                (errorMessage) => {
+                                    // ignore
+                                }
+                            );
+                        } catch (err) {
+                            console.error("Camera start error:", err);
+                            setIsScanning(false);
+                            
+                            let msg = "Gagal membuka kamera.";
+                            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+                                msg = "Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.";
+                            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+                                msg = "Kamera tidak ditemukan di perangkat ini.";
+                            } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+                                msg = "Kamera sedang digunakan oleh aplikasi lain atau tidak dapat diakses.";
+                            }
+                            
+                            showAlert(msg, "Error Kamera", "danger");
+                        }
+                    };
+                    init();
+                }
+
+                // Cleanup function
+                return () => {
+                    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+                        html5QrCodeRef.current.stop().then(() => {
+                            html5QrCodeRef.current.clear();
+                        }).catch(err => console.error("Stop failed", err));
+                    }
+                };
+            }, [isScanning]);
 
             const handleScanLogic = (query) => {
                 const q = query.toUpperCase().trim();

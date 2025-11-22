@@ -292,6 +292,11 @@
             const [loginForm, setLoginForm] = useState({ username: '', password: '' });
             const [loginError, setLoginError] = useState('');
             const [searchTerm, setSearchTerm] = useState('');
+            
+            // STATE UNTUK SEARCH INPUT TRANSAKSI
+            const [itemSearchTerm, setItemSearchTerm] = useState('');
+            const [showItemDropdown, setShowItemDropdown] = useState(false);
+
             const [newItem, setNewItem] = useState({ name: '', sku: '', barcode: '', qty: 0, location: '' });
             const [newLocation, setNewLocation] = useState({ code: '', name: '' });
             const [transaction, setTransaction] = useState({ itemId: '', qty: '', notes: '', targetLocation: '' });
@@ -319,6 +324,18 @@
                 return Object.values(groups);
             }, [inventory]);
 
+            // --- SYNC SEARCH INPUT SAAT ITEM DIPILIH (DARI SCANNER ATAU MANUAL) ---
+            useEffect(() => {
+                if (transaction.itemId) {
+                    const item = inventory.find(i => i.id === transaction.itemId);
+                    if (item) {
+                        setItemSearchTerm(`${item.name} - ${item.sku}`);
+                    }
+                } else {
+                    setItemSearchTerm('');
+                }
+            }, [transaction.itemId, inventory]);
+
             // --- HISTORY HANDLING FOR MOBILE BACK BUTTON ---
             useEffect(() => {
                 window.history.replaceState({ tab: 'dashboard' }, '', '#dashboard');
@@ -328,6 +345,7 @@
                         setIsSidebarOpen(false);
                         setIsScanning(false);
                         setScanResult(null);
+                        setTransaction({ itemId: '', qty: '', notes: '', targetLocation: '' }); // Reset trans
                     } else {
                         setActiveTab('dashboard');
                     }
@@ -476,26 +494,22 @@
             const handleScanLogic = (query) => {
                 const q = query.toUpperCase().trim();
                 
-                // REVISI LOGIKA:
-                // 1. Cari SEMUA item yang cocok, bukan hanya yang pertama ketemu
                 const matchingItems = inventory.filter(i => i.sku === q || i.barcode === q || i.name.toUpperCase().includes(q));
                 
                 if(matchingItems.length > 0) { 
-                    // Agregasi Data
                     const totalQty = matchingItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
                     const locationsList = matchingItems.map(item => ({ location: item.location, qty: item.qty }));
                     
                     setScanResult({
                         type: 'item', 
                         data: {
-                            name: matchingItems[0].name, // Pakai nama dari item pertama
-                            sku: matchingItems[0].sku,   // Pakai SKU dari item pertama
+                            name: matchingItems[0].name, 
+                            sku: matchingItems[0].sku,   
                             totalQty: totalQty,
                             locations: locationsList
                         }
                     }); 
                 } else {
-                    // Jika bukan barang, cek apakah Lokasi
                     const loc = locations.find(l => l.code === q);
                     if(loc) { 
                         setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); 
@@ -503,6 +517,25 @@
                         setScanResult({type:'not_found'}); 
                     }
                 }
+            };
+
+            const handleScanAction = (targetTab) => {
+                if (!scanResult) return;
+
+                let newTrans = { itemId: '', qty: '', notes: '', targetLocation: '' };
+
+                if (scanResult.type === 'item') {
+                    const item = inventory.find(i => i.sku === scanResult.data.sku);
+                    if (item) {
+                        newTrans.itemId = item.id;
+                        newTrans.targetLocation = item.location;
+                    }
+                } else if (scanResult.type === 'location') {
+                    newTrans.targetLocation = scanResult.data.code;
+                }
+
+                setTransaction(newTrans);
+                navigateTo(targetTab);
             };
 
             const handlePackingInput = (sku, field, value) => {
@@ -551,8 +584,18 @@
 
             const handleTransaction = async (type) => {
                 if(!transaction.itemId || transaction.qty<=0) return showAlert("Data tidak valid", "Error", "warning");
+                
+                // VALIDASI MAX STOCK (KHUSUS OUTBOUND)
                 const itemRef = db.collection(COLLECTION_PATH('inventory')).doc(transaction.itemId);
+                const currentItem = inventory.find(i => i.id === transaction.itemId);
                 const qtyInt = parseInt(transaction.qty);
+
+                if (type === 'out' && currentItem) {
+                    if (qtyInt > currentItem.qty) {
+                        return showAlert(`Stok tidak cukup! Maksimal keluar: ${currentItem.qty}`, "Stok Kurang", "danger");
+                    }
+                }
+
                 try {
                     await db.runTransaction(async (t) => {
                         const doc = await t.get(itemRef);
@@ -711,6 +754,71 @@
             const totalPackedBundle = todayPackingLogs.reduce((a,b) => a + (b.bundling || 0), 0);
             const availableSources = moveItem ? inventory.filter(i => i.sku === moveItem.sku) : [];
             const selectedSourceItem = availableSources.find(i => i.id === moveSourceId);
+            
+            // HELPER FOR SEARCHABLE INPUT
+            const renderItemSearchInput = () => {
+                const filteredSearchItems = inventory.filter(i => 
+                    i.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || 
+                    i.sku.toLowerCase().includes(itemSearchTerm.toLowerCase())
+                );
+
+                const handleSelectItem = (item) => {
+                    setTransaction(prev => ({
+                        ...prev, 
+                        itemId: item.id, 
+                        targetLocation: item.location
+                    }));
+                    setItemSearchTerm(`${item.name} - ${item.sku}`);
+                    setShowItemDropdown(false);
+                };
+
+                return (
+                    <div className="relative">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Item Barang (Ketik & Enter)</label>
+                        <input 
+                            type="text"
+                            className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm font-bold focus:border-blue-500 transition-colors"
+                            placeholder="Ketik SKU atau Nama..."
+                            value={itemSearchTerm}
+                            onChange={(e) => {
+                                setItemSearchTerm(e.target.value);
+                                setShowItemDropdown(true);
+                                if(e.target.value === '') setTransaction(prev => ({...prev, itemId: ''}));
+                            }}
+                            onFocus={() => setShowItemDropdown(true)}
+                            onBlur={() => setTimeout(() => setShowItemDropdown(false), 200)} // Delay to allow click
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (filteredSearchItems.length > 0) {
+                                        handleSelectItem(filteredSearchItems[0]);
+                                        e.target.blur();
+                                    }
+                                }
+                            }}
+                        />
+                        {showItemDropdown && itemSearchTerm && (
+                            <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
+                                {filteredSearchItems.length === 0 ? (
+                                    <div className="p-3 text-xs text-slate-400 text-center">Tidak ditemukan</div>
+                                ) : (
+                                    filteredSearchItems.map(item => (
+                                        <div 
+                                            key={item.id} 
+                                            onClick={() => handleSelectItem(item)}
+                                            className="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                        >
+                                            <div className="font-bold text-slate-700 text-sm">{item.name}</div>
+                                            <div className="text-[10px] text-slate-400 font-mono">{item.sku}</div>
+                                            {/* INFO STOK & LOKASI DIHILANGKAN DARI TAMPILAN SESUAI REQUEST */}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            };
 
             return (
                 <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -912,6 +1020,20 @@
                                                 ) : (
                                                     <div className="text-center py-4 text-slate-400"><AlertTriangle size={24} className="mx-auto mb-1 opacity-50"/><p className="text-sm">Data tidak ditemukan</p></div>
                                                 )}
+
+                                                {/* TOMBOL ACTION BARU */}
+                                                {scanResult.type !== 'not_found' && (
+                                                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
+                                                        <button onClick={() => handleScanAction('inbound')} className="bg-emerald-600 text-white p-3 rounded-xl font-bold text-sm flex flex-col items-center gap-1 shadow-lg active:scale-95 transition-transform hover:bg-emerald-700">
+                                                            <ArrowDownCircle size={20} />
+                                                            <span>Masuk (Inbound)</span>
+                                                        </button>
+                                                        <button onClick={() => handleScanAction('outbound')} className="bg-orange-600 text-white p-3 rounded-xl font-bold text-sm flex flex-col items-center gap-1 shadow-lg active:scale-95 transition-transform hover:bg-orange-700">
+                                                            <ArrowUpCircle size={20} />
+                                                            <span>Keluar (Outbound)</span>
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -929,16 +1051,24 @@
                                             </div>
                                             <div className="p-5 space-y-4">
                                                 <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Item Barang</label>
-                                                    <select className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm" value={transaction.itemId} onChange={e=>{const it=inventory.find(i=>i.id==e.target.value); setTransaction({...transaction, itemId:e.target.value, targetLocation:it?it.location:''})}}>
-                                                        <option value="">-- Pilih Barang --</option>
-                                                        {inventory.map(i=><option key={i.id} value={i.id}>{i.name} (Stok: {formatNumber(i.qty)} @ {i.location})</option>)}
-                                                    </select>
+                                                    {/* IMPLEMENTASI SEARCHABLE INPUT PENGGANTI SELECT LAMA */}
+                                                    {renderItemSearchInput()}
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div>
                                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Jumlah</label>
-                                                        <input type="number" min="1" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none font-bold text-lg text-center" value={transaction.qty} onChange={e=>setTransaction({...transaction, qty:e.target.value})} />
+                                                        <input 
+                                                            type="number" 
+                                                            min="1" 
+                                                            // VALIDASI MAX STOCK (VISUAL - DISABLING JIKA LEBIH DARI STOK)
+                                                            className={`w-full p-3 bg-slate-50 rounded-xl border outline-none font-bold text-lg text-center ${
+                                                                activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0) 
+                                                                ? 'border-red-500 text-red-500 focus:border-red-500' 
+                                                                : 'border-slate-200 focus:border-blue-500'
+                                                            }`}
+                                                            value={transaction.qty} 
+                                                            onChange={e=>setTransaction({...transaction, qty:e.target.value})} 
+                                                        />
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Lokasi Rak</label>
@@ -947,14 +1077,31 @@
                                                                 <option value="">-- Pilih --</option>
                                                                 {locations.map(l=><option key={l.id} value={l.code}>{l.code}</option>)}
                                                             </select>
-                                                        ) : <input disabled className="w-full p-3 bg-slate-100 text-slate-500 rounded-xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />}
+                                                        ) : (
+                                                            <div>
+                                                                <input disabled className="w-full p-3 bg-slate-100 text-slate-500 rounded-xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
+                                                                {/* TAMPILAN INFO MAX STOCK DI BAWAH LOKASI (KHUSUS OUTBOUND) */}
+                                                                {activeTab === 'outbound' && transaction.itemId && (
+                                                                    <p className="text-[10px] text-slate-400 text-center mt-1">
+                                                                        Max Stock: <span className="font-bold text-slate-600">{inventory.find(i=>i.id===transaction.itemId)?.qty || 0}</span>
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div>
                                                     <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Catatan</label>
                                                     <input type="text" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm" placeholder="Keterangan transaksi..." value={transaction.notes} onChange={e=>setTransaction({...transaction, notes:e.target.value})} />
                                                 </div>
-                                                <button onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} className={`w-full py-3.5 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-all ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-700':'bg-orange-600 hover:bg-orange-700'}`}>PROSES SIMPAN</button>
+                                                <button 
+                                                    onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} 
+                                                    // DISABLED JIKA STOCK KURANG (KHUSUS OUTBOUND)
+                                                    disabled={activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0)}
+                                                    className={`w-full py-3.5 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-700':'bg-orange-600 hover:bg-orange-700'}`}
+                                                >
+                                                    PROSES SIMPAN
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

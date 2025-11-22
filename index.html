@@ -5,17 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2563eb">
     
-    <!-- PWA Settings -->
+    <!-- PWA Meta Tags (iOS Support) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SNM Stock">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Manifest PWA -->
-    <link rel="manifest" href='data:application/manifest+json,{"name":"SNM Stock WMS","short_name":"SNM Stock","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#2563eb","icons":[{"src":"https://drive.google.com/thumbnail?id=1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X&sz=w512","sizes":"512x512","type":"image/png"}]}'>
-    
-    <!-- Apple Touch Icon -->
-    <link rel="apple-touch-icon" href="https://drive.google.com/thumbnail?id=1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X&sz=w180">
+    <!-- Favicon Basic -->
+    <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
+    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
 
     <title>SNM-Stock - Cloud WMS</title>
     
@@ -35,6 +33,45 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- Dynamic Manifest Script (Kunci Perbaikan PWA) -->
+    <script>
+        // Kita membuat file manifest.json secara virtual menggunakan Javascript
+        // Ini lebih stabil daripada menaruhnya di tag HTML langsung
+        const logoUrl = "https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X";
+        
+        const manifestData = {
+            "name": "SNM Stock WMS",
+            "short_name": "SNM Stock",
+            "start_url": window.location.href, // Otomatis ambil URL saat ini
+            "display": "standalone", // Ini yang bikin FULL SCREEN
+            "background_color": "#ffffff",
+            "theme_color": "#2563eb",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": logoUrl,
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": logoUrl,
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        };
+
+        const stringManifest = JSON.stringify(manifestData);
+        const blob = new Blob([stringManifest], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(blob);
+        
+        // Suntikkan ke head
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
 
     <!-- Tailwind Config -->
     <script>
@@ -87,7 +124,6 @@
         #reader { width: 100%; border-radius: 1rem; overflow: hidden; background: #000; }
         #reader video { object-fit: cover; border-radius: 1rem; width: 100% !important; height: 100% !important; }
         
-        /* Fallback jika gambar rusak */
         .img-fallback { display: none; }
     </style>
 </head>
@@ -132,8 +168,8 @@
         const appId = 'wms-nsm-production'; 
         const COLLECTION_PATH = (name) => `wms_data/${appId}/${name}`;
         
-        // LOGO URL - Menggunakan format Thumbnail agar lebih stabil
-        const LOGO_URL = "https://drive.google.com/thumbnail?id=1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X&sz=w1000";
+        // Menggunakan direct link Google yang lebih stabil untuk gambar
+        const LOGO_URL = "https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X";
 
         const getFormattedDate = (timestamp) => {
             return new Intl.DateTimeFormat('id-ID', {
@@ -645,8 +681,8 @@
                             <SidebarLink tab="locations" icon={Warehouse} label="Lokasi & Rak" />
                             <div className="my-4 border-t border-slate-100"></div><p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2">Operasional</p>
                             <SidebarLink tab="scanner" icon={ScanBarcode} label="Scanner" />
-                            <SidebarLink tab="inbound" icon={ArrowDownCircle} label="Barang Masuk" />
-                            <SidebarLink tab="outbound" icon={ArrowUpCircle} label="Barang Keluar" />
+                            <SidebarLink tab="inbound" icon={ArrowDownCircle} label="Masuk" />
+                            <SidebarLink tab="outbound" icon={ArrowUpCircle} label="Keluar" />
                             <SidebarLink tab="packing" icon={Archive} label="Packing (Logistik)" />
                             <div className="my-4 border-t border-slate-100"></div>
                             <SidebarLink tab="reports" icon={History} label="Laporan & History" />

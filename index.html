@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="SNM Stock">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- Favicon Basic -->
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
     <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
 
@@ -26,7 +26,7 @@
     <!-- QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
-    <!-- Fonts -->
+    <!-- Fonts (Plus Jakarta Sans - Modern & Geometric) -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Firebase SDK (Compat) -->
@@ -47,16 +47,8 @@
             "theme_color": "#2563eb",
             "orientation": "portrait",
             "icons": [
-                {
-                    "src": logoUrl,
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": logoUrl,
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }
+                { "src": logoUrl, "sizes": "192x192", "type": "image/png" },
+                { "src": logoUrl, "sizes": "512x512", "type": "image/png" }
             ]
         };
 
@@ -80,10 +72,15 @@
                         mono: ['"JetBrains Mono"', 'monospace'],
                     },
                     colors: {
-                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
+                        dark: '#0f172a'
                     },
                     screens: {
                         'xs': '380px',
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(37, 99, 235, 0.15)',
+                        'card': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
                     }
                 }
             }
@@ -93,38 +90,89 @@
     <style>
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc;
+            background-color: #f8fafc; /* Fallback */
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none; 
         }
+
+        /* iOS Zoom Fix & Input Optimization */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important; /* Mencegah zoom otomatis di iPhone */
+            }
+        }
+
+        /* BACKGROUND GRADIENT MESH */
+        .bg-mesh {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: 
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.08) 0%, transparent 50%),
+                linear-gradient(to bottom right, #f8fafc, #f1f5f9);
+            z-index: -1;
+        }
         
+        /* GLASSMORPHISM */
         .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .glass-nav {
             background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(226, 232, 240, 0.6);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
         }
 
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
         
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        /* Animations & Effects */
+        .click-effect:active { transform: scale(0.96); }
+        .hover-float:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
         
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        #reader { width: 100%; border-radius: 1rem; overflow: hidden; background: #000; }
-        #reader video { object-fit: cover; border-radius: 1rem; width: 100% !important; height: 100% !important; }
+        #reader { width: 100%; border-radius: 1.5rem; overflow: hidden; background: #000; box-shadow: 0 10px 30px -5px rgba(0,0,0,0.3); }
         
-        .img-fallback { display: none; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* Custom Input Styles */
+        .input-field {
+            transition: all 0.3s ease;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .input-field:focus {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
     </style>
 </head>
-<body class="h-screen overflow-hidden bg-slate-50 text-slate-900">
+<body class="h-screen overflow-hidden text-slate-800">
+    
+    <!-- Background Mesh -->
+    <div class="bg-mesh"></div>
 
     <div id="root"></div>
 
@@ -138,7 +186,7 @@
           Box, ArrowRight, Activity, BarChart3, Cloud, Smartphone, Loader2,
           Home, History, Camera, ChevronLeft, User, ShieldCheck, RefreshCw,
           Calendar, FileSpreadsheet, Filter, Download, Archive, ClipboardList, Save,
-          ArrowRightLeft, Layers, Database, Clipboard, Check
+          ArrowRightLeft, Layers, Database, Clipboard, Check, RotateCcw, Zap
         } from 'https://esm.sh/lucide-react@0.292.0';
 
         // ==========================================
@@ -174,7 +222,6 @@
             }).format(new Date(timestamp));
         };
 
-        // HELPER: FORMAT ANGKA (Ribuan dengan Titik)
         const formatNumber = (num) => {
             if (num === null || num === undefined) return '0';
             return new Intl.NumberFormat('id-ID').format(num);
@@ -212,24 +259,24 @@
         const Modal = ({ isOpen, title, children, onClose, type = 'default' }) => {
             if (!isOpen) return null;
             const colors = {
-                default: 'bg-white text-slate-800',
-                danger: 'bg-red-50 text-red-700',
-                success: 'bg-emerald-50 text-emerald-700',
-                info: 'bg-blue-50 text-blue-800'
+                default: 'bg-white text-slate-800 border-b border-slate-100',
+                danger: 'bg-red-50 text-red-700 border-b border-red-100',
+                success: 'bg-emerald-50 text-emerald-700 border-b border-emerald-100',
+                info: 'bg-blue-50 text-blue-800 border-b border-blue-100'
             };
             return (
-                <div className="fixed inset-0 bg-slate-900/70 z-[60] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm animate-fade-in" style={{zIndex: 100}}>
-                    <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh] animate-slide-up sm:animate-fade-in">
-                        <div className={`px-6 py-4 flex justify-between items-center border-b border-slate-100 sm:rounded-t-3xl rounded-t-3xl ${colors[type]}`}>
-                            <h3 className="font-bold text-lg flex items-center gap-2.5 tracking-tight">
-                                {type === 'danger' && <AlertTriangle size={20}/>}
-                                {type === 'success' && <CheckCircle size={20}/>}
-                                {type === 'info' && <Info size={20}/>}
+                <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center sm:p-4 backdrop-blur-sm animate-fade-in" style={{zIndex: 100}}>
+                    <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-[2rem] shadow-2xl flex flex-col max-h-[90vh] animate-slide-up overflow-hidden">
+                        <div className={`px-6 py-5 flex justify-between items-center ${colors[type]}`}>
+                            <h3 className="font-bold text-lg flex items-center gap-3 tracking-tight">
+                                {type === 'danger' && <div className="p-2 bg-red-100 rounded-full"><AlertTriangle size={20}/></div>}
+                                {type === 'success' && <div className="p-2 bg-emerald-100 rounded-full"><CheckCircle size={20}/></div>}
+                                {type === 'info' && <div className="p-2 bg-blue-100 rounded-full"><Info size={20}/></div>}
                                 {title}
                             </h3>
-                            <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full"><X size={20}/></button>
+                            <button onClick={onClose} className="p-2 hover:bg-black/5 rounded-full transition-colors active:scale-90"><X size={22}/></button>
                         </div>
-                        <div className="p-6 overflow-y-auto custom-scrollbar">
+                        <div className="p-6 overflow-y-auto custom-scrollbar bg-white/50">
                             {children}
                         </div>
                     </div>
@@ -241,13 +288,13 @@
             <div className="fixed inset-0 z-[999] bg-slate-900 flex flex-col items-center justify-center p-6 text-white overflow-y-auto">
                 <div className="max-w-lg w-full space-y-6 animate-slide-up">
                     <div className="flex flex-col items-center text-center">
-                        <div className="w-20 h-20 bg-red-500/20 text-red-500 rounded-3xl flex items-center justify-center mb-4 animate-pulse">
-                            <Lock size={40} />
+                        <div className="w-24 h-24 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-6 animate-pulse ring-4 ring-red-500/10">
+                            <Lock size={48} />
                         </div>
                         <h1 className="text-2xl font-bold mb-2">Akses Database Ditolak</h1>
-                        <p className="text-slate-400 text-sm">Aplikasi masih terblokir. Pastikan Anda sudah menyimpan Rules dengan benar.</p>
+                        <p className="text-slate-400 text-sm leading-relaxed">Aplikasi masih terblokir. Pastikan Anda sudah menyimpan Security Rules dengan benar di Firebase Console.</p>
                     </div>
-                    <button onClick={()=>window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <button onClick={()=>window.location.reload()} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
                         <RefreshCw size={20}/> Coba Refresh
                     </button>
                 </div>
@@ -255,10 +302,35 @@
         );
 
         const BottomNavItem = ({ icon: Icon, label, active, onClick }) => (
-            <button onClick={onClick} className={`flex flex-col items-center justify-center py-2 px-1 flex-1 transition-colors ${active ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                <Icon size={24} strokeWidth={active ? 2.5 : 2} className={`mb-1 ${active ? '-translate-y-1' : ''} transition-transform duration-200`} />
-                <span className="text-[10px] font-bold">{label}</span>
+            <button onClick={onClick} className={`flex flex-col items-center justify-center py-2 px-1 flex-1 transition-all duration-300 ${active ? 'text-blue-600 scale-105' : 'text-slate-400 hover:text-slate-600'}`}>
+                <div className={`relative p-1.5 rounded-xl transition-all duration-300 ${active ? 'bg-blue-50 shadow-sm' : ''}`}>
+                    <Icon size={24} strokeWidth={active ? 2.5 : 2} className={`transition-transform duration-300 ${active ? '-translate-y-0.5' : ''}`} />
+                    {active && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></span>}
+                </div>
+                <span className={`text-[10px] font-bold mt-1 transition-all ${active ? 'text-blue-700' : 'text-slate-400'}`}>{label}</span>
             </button>
+        );
+
+        // REUSABLE COMPONENTS
+        const Card = ({ children, className = "", onClick }) => (
+            <div onClick={onClick} className={`bg-white p-5 rounded-3xl border border-slate-100 shadow-card transition-all duration-300 ${onClick ? 'cursor-pointer hover-float active:scale-[0.98] active:bg-slate-50' : ''} ${className}`}>
+                {children}
+            </div>
+        );
+
+        const StatCard = ({ title, value, icon: Icon, colorClass, bgClass }) => (
+             <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-card relative overflow-hidden group">
+                <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-2xl opacity-20 -mr-10 -mt-10 transition-transform group-hover:scale-150 ${bgClass}`}></div>
+                <div className="relative z-10">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{title}</p>
+                    <div className="flex items-center justify-between">
+                        <p className={`text-2xl font-extrabold ${colorClass}`}>{value}</p>
+                        <div className={`p-2.5 rounded-xl ${bgClass} ${colorClass} bg-opacity-10`}>
+                            <Icon size={20} strokeWidth={2.5}/>
+                        </div>
+                    </div>
+                </div>
+            </div>
         );
 
         function App() {
@@ -277,9 +349,11 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
             const [isScanning, setIsScanning] = useState(false);
+            const [scannerLoading, setScannerLoading] = useState(false);
             const html5QrCodeRef = useRef(null);
             
             const [packingInput, setPackingInput] = useState({}); 
+            const [returInput, setReturInput] = useState({});
             const [moveItem, setMoveItem] = useState(null);
             const [moveSourceId, setMoveSourceId] = useState('');
             const [moveTargetLocation, setMoveTargetLocation] = useState('');
@@ -293,9 +367,10 @@
             const [loginError, setLoginError] = useState('');
             const [searchTerm, setSearchTerm] = useState('');
             
-            // STATE UNTUK SEARCH INPUT TRANSAKSI
             const [itemSearchTerm, setItemSearchTerm] = useState('');
             const [showItemDropdown, setShowItemDropdown] = useState(false);
+            const [reportSearchSku, setReportSearchSku] = useState('');
+            const [showReportDropdown, setShowReportDropdown] = useState(false);
 
             const [newItem, setNewItem] = useState({ name: '', sku: '', barcode: '', qty: 0, location: '' });
             const [newLocation, setNewLocation] = useState({ code: '', name: '' });
@@ -324,19 +399,13 @@
                 return Object.values(groups);
             }, [inventory]);
 
-            // --- SYNC SEARCH INPUT SAAT ITEM DIPILIH (DARI SCANNER ATAU MANUAL) ---
             useEffect(() => {
                 if (transaction.itemId) {
                     const item = inventory.find(i => i.id === transaction.itemId);
-                    if (item) {
-                        setItemSearchTerm(`${item.name} - ${item.sku}`);
-                    }
-                } else {
-                    setItemSearchTerm('');
-                }
+                    if (item) { setItemSearchTerm(`${item.name} - ${item.sku}`); }
+                } else { setItemSearchTerm(''); }
             }, [transaction.itemId, inventory]);
 
-            // --- HISTORY HANDLING FOR MOBILE BACK BUTTON ---
             useEffect(() => {
                 window.history.replaceState({ tab: 'dashboard' }, '', '#dashboard');
                 const handlePopState = (event) => {
@@ -345,10 +414,8 @@
                         setIsSidebarOpen(false);
                         setIsScanning(false);
                         setScanResult(null);
-                        setTransaction({ itemId: '', qty: '', notes: '', targetLocation: '' }); // Reset trans
-                    } else {
-                        setActiveTab('dashboard');
-                    }
+                        setTransaction({ itemId: '', qty: '', notes: '', targetLocation: '' }); 
+                    } else { setActiveTab('dashboard'); }
                 };
                 window.addEventListener('popstate', handlePopState);
                 return () => window.removeEventListener('popstate', handlePopState);
@@ -373,31 +440,24 @@
                 return () => { isMounted = false; };
             }, []);
 
-            // LOGIKA MEMBUAT ADMIN PERTAMA KALI
             useEffect(() => {
                 if (authReady && firebaseUser && !loadingUsers) {
+                    // LOGIKA AUTO-CREATE ADMIN DIHAPUS ATAS PERMINTAAN USER
                     const ensureData = async () => {
                         try {
-                            const adminExists = users.some(u => u.username === 'admin');
-                            if (!adminExists) { 
-                                await db.collection(COLLECTION_PATH('users')).add({ 
-                                    username: 'admin', 
-                                    password: 'snm123', 
-                                    name: 'Super Admin', 
-                                    role: 'admin', 
-                                    createdAt: Date.now() 
-                                }); 
-                            }
-                            if (locations.length === 0) {
-                                const locRef = db.collection(COLLECTION_PATH('locations'));
-                                const snap = await locRef.get(); 
-                                if(snap.empty) { await locRef.add({ code: 'A-01', name: 'Rak Depan' }); await locRef.add({ code: 'B-02', name: 'Gudang Belakang' }); }
+                            if (locations.length > 0 || !loadingLoc) { 
+                                const returExists = locations.some(l => l.code === 'RETUR');
+                                if (!returExists) { await db.collection(COLLECTION_PATH('locations')).add({ code: 'RETUR', name: 'Gudang Retur' }); }
+                                if (locations.length === 0) {
+                                     await db.collection(COLLECTION_PATH('locations')).add({ code: 'A-01', name: 'Rak Depan' }); 
+                                     await db.collection(COLLECTION_PATH('locations')).add({ code: 'B-02', name: 'Gudang Belakang' });
+                                }
                             }
                         } catch (e) { if (e.code === 'permission-denied') handlePermissionError(); }
                     };
                     ensureData();
                 }
-            }, [authReady, firebaseUser, loadingUsers, users.length, locations.length]);
+            }, [authReady, firebaseUser, loadingUsers, locations.length, loadingLoc]);
 
             const showAlert = (message, title="Info", type="default") => setModals(p => ({ ...p, alert: { isOpen: true, title, message, type } }));
             const closeAlert = () => setModals(p => ({ ...p, alert: { ...p.alert, isOpen: false } }));
@@ -414,9 +474,7 @@
                     localStorage.setItem('snm_active_user', JSON.stringify(userSession));
                     setLoginForm({username:'', password:''});
                     navigateTo('dashboard');
-                } else {
-                    setLoginError('Username atau Password salah.');
-                }
+                } else { setLoginError('Username atau Password salah.'); }
             };
 
             const navigateTo = (tab) => {
@@ -429,18 +487,21 @@
             };
 
             const SidebarLink = ({ tab, icon: Icon, label }) => (
-                <button onClick={() => navigateTo(tab)} className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all duration-200 ${activeTab === tab ? 'bg-blue-50 text-blue-600 font-bold shadow-sm' : 'text-slate-500 hover:bg-slate-50 font-medium'}`}>
-                    <Icon size={20} className={activeTab === tab ? "text-blue-600" : "text-slate-400"} strokeWidth={activeTab === tab ? 2.5 : 2} />
-                    <span className="text-sm">{label}</span>
+                <button onClick={() => navigateTo(tab)} className={`w-full flex items-center gap-4 px-6 py-4 mb-1.5 rounded-2xl transition-all duration-300 group ${activeTab === tab ? 'bg-blue-600 shadow-lg shadow-blue-500/30 text-white' : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}>
+                    <Icon size={20} className={`${activeTab === tab ? "text-white" : "text-slate-400 group-hover:text-blue-600 transition-colors"}`} strokeWidth={activeTab === tab ? 2.5 : 2} />
+                    <span className={`text-sm font-bold tracking-wide ${activeTab === tab ? 'opacity-100' : 'opacity-90'}`}>{label}</span>
+                    {activeTab === tab && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>}
                 </button>
             );
 
-            const stopScanner = async () => {
-                setIsScanning(false);
-            };
-
-            const startScanner = () => {
-                setIsScanning(true);
+            const stopScanner = async () => { setIsScanning(false); };
+            const startScanner = async () => { 
+                setScannerLoading(true);
+                // Small delay to prevent double click freeze
+                setTimeout(() => {
+                    setIsScanning(true);
+                    setScannerLoading(false);
+                }, 300);
             };
 
             useEffect(() => {
@@ -448,92 +509,57 @@
                 if (isScanning) {
                     const init = async () => {
                         await new Promise(r => setTimeout(r, 500));
-                        if (!document.getElementById("reader")) {
-                            console.error("Reader element not found");
-                            setIsScanning(false);
-                            return;
-                        }
+                        if (!document.getElementById("reader")) { setIsScanning(false); return; }
                         try {
                             html5QrCode = new Html5Qrcode("reader");
                             html5QrCodeRef.current = html5QrCode;
                             await html5QrCode.start(
                                 { facingMode: "environment" }, 
                                 { fps: 10, qrbox: { width: 250, height: 250 } }, 
-                                (decodedText) => {
-                                    setScanQuery(decodedText);
-                                    stopScanner();
-                                    handleScanLogic(decodedText);
-                                },
+                                (decodedText) => { setScanQuery(decodedText); stopScanner(); handleScanLogic(decodedText); },
                                 (errorMessage) => { }
                             );
                         } catch (err) {
-                            console.error("Camera start error:", err);
+                            console.error("Camera error:", err);
                             setIsScanning(false);
-                            let msg = "Gagal membuka kamera.";
-                            if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-                                msg = "Izin kamera ditolak. Silakan izinkan akses kamera di pengaturan browser Anda.";
-                            } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-                                msg = "Kamera tidak ditemukan di perangkat ini.";
-                            } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-                                msg = "Kamera sedang digunakan oleh aplikasi lain atau tidak dapat diakses.";
-                            }
-                            showAlert(msg, "Error Kamera", "danger");
+                            showAlert("Gagal membuka kamera. Pastikan izin diberikan.", "Error Kamera", "danger");
                         }
                     };
                     init();
                 }
                 return () => {
-                    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-                        html5QrCodeRef.current.stop().then(() => {
-                            html5QrCodeRef.current.clear();
-                        }).catch(err => console.error("Stop failed", err));
+                    if (html5QrCodeRef.current) {
+                        try {
+                            if (html5QrCodeRef.current.isScanning) {
+                                html5QrCodeRef.current.stop().then(() => { html5QrCodeRef.current.clear(); }).catch(err => console.warn("Scanner stop failed", err));
+                            }
+                        } catch (e) { }
                     }
                 };
             }, [isScanning]);
 
             const handleScanLogic = (query) => {
                 const q = query.toUpperCase().trim();
-                
                 const matchingItems = inventory.filter(i => i.sku === q || i.barcode === q || i.name.toUpperCase().includes(q));
                 
                 if(matchingItems.length > 0) { 
                     const totalQty = matchingItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
                     const locationsList = matchingItems.map(item => ({ location: item.location, qty: item.qty }));
-                    
-                    setScanResult({
-                        type: 'item', 
-                        data: {
-                            name: matchingItems[0].name, 
-                            sku: matchingItems[0].sku,   
-                            totalQty: totalQty,
-                            locations: locationsList
-                        }
-                    }); 
+                    setScanResult({ type: 'item', data: { name: matchingItems[0].name, sku: matchingItems[0].sku, totalQty: totalQty, locations: locationsList } }); 
                 } else {
                     const loc = locations.find(l => l.code === q);
-                    if(loc) { 
-                        setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); 
-                    } else { 
-                        setScanResult({type:'not_found'}); 
-                    }
+                    if(loc) { setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); } 
+                    else { setScanResult({type:'not_found'}); }
                 }
             };
 
             const handleScanAction = (targetTab) => {
                 if (!scanResult) return;
-
                 let newTrans = { itemId: '', qty: '', notes: '', targetLocation: '' };
-
                 if (scanResult.type === 'item') {
-                    const item = inventory.find(i => i.sku === scanResult.data.sku);
-                    if (item) {
-                        newTrans.itemId = item.id;
-                        newTrans.targetLocation = item.location;
-                    }
-                } else if (scanResult.type === 'location') {
-                    newTrans.targetLocation = scanResult.data.code;
-                }
-
+                    const item = inventory.find(i => i.sku.toUpperCase() === scanResult.data.sku.toUpperCase());
+                    if (item) { newTrans.itemId = item.id; newTrans.targetLocation = item.location; }
+                } else if (scanResult.type === 'location') { newTrans.targetLocation = scanResult.data.code; }
                 setTransaction(newTrans);
                 navigateTo(targetTab);
             };
@@ -541,6 +567,12 @@
             const handlePackingInput = (sku, field, value) => {
                 const val = parseInt(value) || 0;
                 setPackingInput(prev => ({ ...prev, [sku]: { ...prev[sku], [field]: val } }));
+            };
+            
+            const handleReturInput = (sku, value) => {
+                if (!isAdmin) return;
+                const val = parseInt(value) || 0;
+                setReturInput(prev => ({ ...prev, [sku]: val }));
             };
 
             const savePackingData = async () => {
@@ -566,6 +598,38 @@
                     showAlert("Laporan packing berhasil disimpan!", "Sukses", "success");
                 } catch (error) { console.error(error); showAlert("Gagal menyimpan data: " + error.message, "Error", "danger"); }
             };
+            
+            const saveReturData = async () => {
+                if (!isAdmin) return showAlert("Hanya Admin yang bisa menyimpan retur.", "Akses Ditolak", "danger");
+                const itemsToRetur = Object.entries(returInput).filter(([_, qty]) => qty > 0);
+                if (itemsToRetur.length === 0) return showAlert("Belum ada data retur yang diisi.", "Info");
+                try {
+                    const timestamp = Date.now();
+                    const dateStr = getFormattedDate(timestamp);
+                    const batch = db.batch();
+                    for (const [sku, qty] of itemsToRetur) {
+                        const itemMaster = inventory.find(i => i.sku === sku);
+                        if (!itemMaster) { continue; }
+                        const existingReturItem = inventory.find(i => i.sku === sku && i.location === 'RETUR');
+                        if (existingReturItem) {
+                            const itemRef = db.collection(COLLECTION_PATH('inventory')).doc(existingReturItem.id);
+                            batch.update(itemRef, { qty: firebase.firestore.FieldValue.increment(qty) });
+                        } else {
+                            const newItemRef = db.collection(COLLECTION_PATH('inventory')).doc();
+                            batch.set(newItemRef, {
+                                name: itemMaster.name, sku: itemMaster.sku, barcode: itemMaster.barcode || '', location: 'RETUR', qty: qty, createdAt: timestamp
+                            });
+                        }
+                        const logRef = db.collection(COLLECTION_PATH('logs')).doc();
+                        batch.set(logRef, {
+                            type: 'retur', itemName: itemMaster.name, sku: itemMaster.sku, qty: qty, date: dateStr, user: currentUser.name, notes: 'Retur Barang', timestamp: timestamp
+                        });
+                    }
+                    await batch.commit();
+                    setReturInput({});
+                    showAlert("Data Retur berhasil disimpan. Stok bertambah di lokasi RETUR.", "Sukses", "success");
+                } catch (error) { console.error(error); showAlert("Gagal menyimpan retur: " + error.message, "Error", "danger"); }
+            };
 
             const handleAddItem = async (e) => {
                 e.preventDefault();
@@ -584,18 +648,10 @@
 
             const handleTransaction = async (type) => {
                 if(!transaction.itemId || transaction.qty<=0) return showAlert("Data tidak valid", "Error", "warning");
-                
-                // VALIDASI MAX STOCK (KHUSUS OUTBOUND)
                 const itemRef = db.collection(COLLECTION_PATH('inventory')).doc(transaction.itemId);
                 const currentItem = inventory.find(i => i.id === transaction.itemId);
                 const qtyInt = parseInt(transaction.qty);
-
-                if (type === 'out' && currentItem) {
-                    if (qtyInt > currentItem.qty) {
-                        return showAlert(`Stok tidak cukup! Maksimal keluar: ${currentItem.qty}`, "Stok Kurang", "danger");
-                    }
-                }
-
+                if (type === 'out' && currentItem) { if (qtyInt > currentItem.qty) { return showAlert(`Stok tidak cukup! Maksimal keluar: ${currentItem.qty}`, "Stok Kurang", "danger"); } }
                 try {
                     await db.runTransaction(async (t) => {
                         const doc = await t.get(itemRef);
@@ -624,10 +680,7 @@
                 } catch(err) { showAlert(typeof err === 'string' ? err : err.message, "Gagal", "danger"); }
             };
 
-            const openMoveModal = (item) => {
-                setMoveItem(item);
-                setMoveSourceId(''); setMoveTargetLocation(''); setMoveQty('');
-            };
+            const openMoveModal = (item) => { setMoveItem(item); setMoveSourceId(''); setMoveTargetLocation(''); setMoveQty(''); };
 
             const handleMoveItemSubmit = async (e) => {
                 e.preventDefault();
@@ -637,7 +690,6 @@
                 if (sourceItem.location === moveTargetLocation) return showAlert("Lokasi tujuan sama dengan lokasi asal", "Info", "info");
                 const qtyToMove = parseInt(moveQty);
                 if(qtyToMove <= 0 || qtyToMove > sourceItem.qty) return showAlert("Jumlah tidak valid atau melebihi stok", "Error", "warning");
-
                 try {
                     await db.runTransaction(async (t) => {
                         const sourceRef = db.collection(COLLECTION_PATH('inventory')).doc(moveSourceId);
@@ -645,7 +697,6 @@
                         if (!sourceDoc.exists) throw "Dokumen asal tidak ditemukan";
                         const newSourceQty = sourceDoc.data().qty - qtyToMove;
                         if(newSourceQty === 0) { t.delete(sourceRef); } else { t.update(sourceRef, { qty: newSourceQty }); }
-
                         const existingTargetItem = inventory.find(i => i.sku === sourceItem.sku && i.location === moveTargetLocation);
                         if(existingTargetItem) {
                             const targetRef = db.collection(COLLECTION_PATH('inventory')).doc(existingTargetItem.id);
@@ -673,7 +724,12 @@
                 else if (filterType === 'weekly') { start.setDate(now.getDate() - 7); start.setHours(0,0,0,0); } 
                 else if (filterType === 'monthly') { start.setDate(1); start.setHours(0,0,0,0); } 
                 else if (filterType === 'custom' && customDateStart && customDateEnd) { start = new Date(customDateStart); start.setHours(0,0,0,0); end = new Date(customDateEnd); end.setHours(23,59,59,999); }
-                return logs.filter(log => { const ts = log.timestamp; return ts >= start.getTime() && ts <= end.getTime(); }).sort((a,b) => b.timestamp - a.timestamp);
+                let filtered = logs.filter(log => { const ts = log.timestamp; return ts >= start.getTime() && ts <= end.getTime(); });
+                if (reportSearchSku) {
+                    const term = reportSearchSku.toLowerCase();
+                    filtered = filtered.filter(log => (log.sku || '').toLowerCase().includes(term) || (log.itemName || '').toLowerCase().includes(term));
+                }
+                return filtered.sort((a,b) => b.timestamp - a.timestamp);
             };
 
             const downloadExcel = () => {
@@ -682,7 +738,7 @@
                 const headers = "Tanggal,Tipe,SKU,Nama Barang,Jumlah,User,Catatan\n";
                 const rows = data.map(log => {
                     const cleanNotes = log.notes ? log.notes.replace(/,/g, ' ') : ''; 
-                    const typeMap = { 'in': 'MASUK', 'out': 'KELUAR', 'move': 'PINDAH RAK' };
+                    const typeMap = { 'in': 'MASUK', 'out': 'KELUAR', 'move': 'PINDAH RAK', 'retur': 'RETUR' };
                     return `${log.date},${typeMap[log.type] || log.type},${log.sku},${log.itemName},${log.qty},${log.user},${cleanNotes}`;
                 }).join("\n");
                 const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
@@ -695,53 +751,57 @@
 
             if (!currentUser) {
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-900 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-slate-900 pointer-events-none"></div>
-                        <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-2xl animate-slide-up z-10">
-                            <div className="text-center mb-8">
-                                <div className="flex items-center justify-center mx-auto mb-4">
-                                    {/* LOGO DISPLAY */}
-                                    <img 
-                                        src={LOGO_URL} 
-                                        alt="SNM Stock Logo" 
-                                        className="h-28 w-auto object-contain drop-shadow-md"
-                                        onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.style.display = 'none';
-                                            e.target.nextSibling.style.display = 'block';
-                                        }} 
-                                    />
-                                    <h1 className="text-4xl font-extrabold text-blue-600 tracking-tight hidden">SNM Stock</h1>
-                                </div>
-                                <p className="text-slate-500 text-sm font-bold">Warehouse Management System</p>
+                    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-900 relative overflow-hidden">
+                         <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-blue-600/20 rounded-full blur-[120px]"></div>
+                            <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] bg-cyan-500/20 rounded-full blur-[120px]"></div>
+                        </div>
+                        
+                        <div className="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl animate-slide-up z-10 border border-white/50">
+                            <div className="text-center mb-10 relative">
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-blue-500/10 rounded-full blur-xl"></div>
+                                <img 
+                                    src={LOGO_URL} 
+                                    alt="SNM Stock Logo" 
+                                    className="h-24 w-auto object-contain drop-shadow-lg relative z-10 mx-auto transform hover:scale-105 transition-transform duration-500"
+                                />
+                                <h1 className="mt-4 text-2xl font-extrabold text-slate-800 tracking-tight">Selamat Datang</h1>
+                                <p className="text-slate-500 text-sm font-medium mt-1">Silakan login untuk akses gudang</p>
                             </div>
-                            {loginError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold flex items-center gap-2 animate-fade-in"><AlertTriangle size={16}/> {loginError}</div>}
                             
-                            <form onSubmit={handleLogin} className="space-y-4">
+                            {loginError && (
+                                <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold flex items-center gap-3 animate-fade-in border border-red-100">
+                                    <AlertTriangle size={18} className="shrink-0"/> {loginError}
+                                </div>
+                            )}
+                            
+                            <form onSubmit={handleLogin} className="space-y-5">
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Username</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">Username</label>
                                     <input 
                                         type="text" 
-                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" 
-                                        placeholder="Masukkan Username" 
+                                        className="input-field w-full p-4 bg-white border border-slate-200 rounded-2xl text-slate-800 font-bold outline-none" 
+                                        placeholder="Ketik username..." 
                                         value={loginForm.username} 
                                         onChange={e=>setLoginForm({...loginForm, username:e.target.value})} 
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Password</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-2 mb-1.5 block tracking-wider">Password</label>
                                     <input 
                                         type="password" 
-                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none font-medium transition-colors" 
-                                        placeholder="Masukkan Password" 
+                                        className="input-field w-full p-4 bg-white border border-slate-200 rounded-2xl text-slate-800 font-bold outline-none" 
+                                        placeholder="Ketik password..." 
                                         value={loginForm.password} 
                                         onChange={e=>setLoginForm({...loginForm, password:e.target.value})} 
                                     />
                                 </div>
-                                <button disabled={loadingUsers} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all flex justify-center">{loadingUsers ? <Loader2 className="animate-spin"/> : 'Masuk'}</button>
+                                <button disabled={loadingUsers} className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 transition-all flex justify-center items-center gap-2 text-lg">
+                                    {loadingUsers ? <Loader2 className="animate-spin"/> : 'Masuk Aplikasi'}
+                                </button>
                             </form>
-                            <p className="text-center text-xs text-slate-400 mt-6">Pastikan internet lancar untuk memuat data.</p>
                         </div>
+                        <p className="text-white/40 text-xs font-medium mt-8 text-center">© 2024 SNM Stock System • v2.0 Cloud</p>
                     </div>
                 );
             }
@@ -755,65 +815,48 @@
             const availableSources = moveItem ? inventory.filter(i => i.sku === moveItem.sku) : [];
             const selectedSourceItem = availableSources.find(i => i.id === moveSourceId);
             
-            // HELPER FOR SEARCHABLE INPUT
             const renderItemSearchInput = () => {
-                const filteredSearchItems = inventory.filter(i => 
-                    i.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || 
-                    i.sku.toLowerCase().includes(itemSearchTerm.toLowerCase())
-                );
-
+                const filteredSearchItems = inventory.filter(i => i.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || i.sku.toLowerCase().includes(itemSearchTerm.toLowerCase()));
                 const handleSelectItem = (item) => {
-                    setTransaction(prev => ({
-                        ...prev, 
-                        itemId: item.id, 
-                        targetLocation: item.location
-                    }));
-                    setItemSearchTerm(`${item.name} - ${item.sku}`);
-                    setShowItemDropdown(false);
+                    setTransaction(prev => ({ ...prev, itemId: item.id, targetLocation: item.location }));
+                    setItemSearchTerm(`${item.name} - ${item.sku}`); setShowItemDropdown(false);
                 };
-
                 return (
                     <div className="relative">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Item Barang (Ketik & Enter)</label>
-                        <input 
-                            type="text"
-                            className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm font-bold focus:border-blue-500 transition-colors"
-                            placeholder="Ketik SKU atau Nama..."
-                            value={itemSearchTerm}
-                            onChange={(e) => {
-                                setItemSearchTerm(e.target.value);
-                                setShowItemDropdown(true);
-                                if(e.target.value === '') setTransaction(prev => ({...prev, itemId: ''}));
-                            }}
-                            onFocus={() => setShowItemDropdown(true)}
-                            onBlur={() => setTimeout(() => setShowItemDropdown(false), 200)} // Delay to allow click
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (filteredSearchItems.length > 0) {
-                                        handleSelectItem(filteredSearchItems[0]);
-                                        e.target.blur();
-                                    }
-                                }
-                            }}
-                        />
+                        <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Cari Barang (Ketik SKU/Nama)</label>
+                        <input type="text" className="input-field w-full p-4 bg-white rounded-2xl border border-slate-200 outline-none text-sm font-bold" placeholder="Ketik SKU atau Nama..." value={itemSearchTerm} onChange={(e) => { setItemSearchTerm(e.target.value); setShowItemDropdown(true); if(e.target.value === '') setTransaction(prev => ({...prev, itemId: ''})); }} onFocus={() => setShowItemDropdown(true)} onBlur={() => setTimeout(() => setShowItemDropdown(false), 200)} />
                         {showItemDropdown && itemSearchTerm && (
-                            <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
-                                {filteredSearchItems.length === 0 ? (
-                                    <div className="p-3 text-xs text-slate-400 text-center">Tidak ditemukan</div>
-                                ) : (
-                                    filteredSearchItems.map(item => (
-                                        <div 
-                                            key={item.id} 
-                                            onClick={() => handleSelectItem(item)}
-                                            className="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0"
-                                        >
-                                            <div className="font-bold text-slate-700 text-sm">{item.name}</div>
-                                            <div className="text-[10px] text-slate-400 font-mono">{item.sku}</div>
-                                            {/* INFO STOK & LOKASI DIHILANGKAN DARI TAMPILAN SESUAI REQUEST */}
-                                        </div>
-                                    ))
-                                )}
+                            <div className="absolute z-50 left-0 right-0 mt-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                                {filteredSearchItems.length === 0 ? <div className="p-4 text-xs text-slate-400 text-center font-medium">Barang tidak ditemukan</div> : filteredSearchItems.map(item => (
+                                    <div key={item.id} onClick={() => handleSelectItem(item)} className="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
+                                        <div className="font-bold text-slate-700 text-sm">{item.name}</div>
+                                        <div className="text-[10px] text-slate-400 font-mono mt-0.5 bg-slate-100 inline-block px-1.5 rounded">{item.sku}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderReportSearchInput = () => {
+                const filteredDropdownItems = groupedInventory.filter(i => i.name.toLowerCase().includes(reportSearchSku.toLowerCase()) || i.sku.toLowerCase().includes(reportSearchSku.toLowerCase()));
+                return (
+                    <div className="relative w-full mb-4">
+                        <label className="text-xs text-slate-400 font-bold uppercase block mb-1.5 ml-1">Filter Spesifik Product</label>
+                        <div className="relative group">
+                            <Search className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18}/>
+                            <input type="text" className="input-field w-full pl-11 pr-10 py-3.5 bg-white rounded-2xl border border-slate-200 outline-none text-sm font-medium" placeholder="Semua Produk..." value={reportSearchSku} onChange={(e) => { setReportSearchSku(e.target.value); setShowReportDropdown(true); }} onFocus={() => setShowReportDropdown(true)} onBlur={() => setTimeout(() => setShowReportDropdown(false), 200)} />
+                            {reportSearchSku && <button onClick={() => setReportSearchSku('')} className="absolute right-3 top-3.5 text-slate-400 hover:text-red-500"><X size={18} /></button>}
+                        </div>
+                        {showReportDropdown && reportSearchSku && (
+                            <div className="absolute z-50 left-0 right-0 mt-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
+                                {filteredDropdownItems.length === 0 ? <div className="p-4 text-xs text-slate-400 text-center">Tidak ditemukan</div> : filteredDropdownItems.map(item => (
+                                    <div key={item.sku} onClick={() => setReportSearchSku(item.sku)} className="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0">
+                                        <div className="font-bold text-slate-700 text-sm">{item.name}</div>
+                                        <div className="text-xs text-slate-400 font-mono mt-1">{item.sku}</div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -821,74 +864,129 @@
             };
 
             return (
-                <div className="flex h-screen bg-slate-50 overflow-hidden">
-                    <aside className={`fixed md:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 shadow-2xl md:shadow-none`}>
-                        <div className="p-6 flex items-center justify-center border-b border-slate-50 shrink-0">
-                             {/* SIDEBAR LOGO */}
-                             <img 
-                                src={LOGO_URL} 
-                                alt="Logo" 
-                                className="h-16 w-auto object-contain"
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'block';
-                                }}
-                             />
-                             <h1 className="text-xl font-extrabold text-slate-800 hidden">SNM<span className="text-blue-600">Cloud</span></h1>
+                <div className="flex h-screen overflow-hidden">
+                    {/* SIDEBAR (DESKTOP) */}
+                    <aside className={`fixed md:static inset-y-0 left-0 z-40 w-80 glass-panel border-r-0 md:border-r border-white/50 flex flex-col transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isSidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'} md:translate-x-0 md:shadow-none`}>
+                        <div className="p-8 flex flex-col items-center border-b border-slate-100/50 shrink-0 relative overflow-hidden">
+                             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600"></div>
+                             <img src={LOGO_URL} alt="Logo" className="h-20 w-auto object-contain mb-4 drop-shadow-md hover:scale-110 transition-transform duration-500" />
+                             <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">SNM<span className="text-blue-600">Cloud</span></h1>
+                             <div className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold mt-2 uppercase tracking-wider border border-blue-100">Warehouse System</div>
                         </div>
-                        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+                        <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
                             <SidebarLink tab="dashboard" icon={LayoutDashboard} label="Dashboard" />
                             <SidebarLink tab="inventory" icon={Box} label="Stok Barang Global" />
                             <SidebarLink tab="locations" icon={Warehouse} label="Lokasi & Rak" />
-                            <div className="my-4 border-t border-slate-100"></div><p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2">Operasional</p>
-                            <SidebarLink tab="scanner" icon={ScanBarcode} label="Scanner" />
-                            <SidebarLink tab="inbound" icon={ArrowDownCircle} label="Masuk" />
-                            <SidebarLink tab="outbound" icon={ArrowUpCircle} label="Keluar" />
-                            <SidebarLink tab="packing" icon={Archive} label="Packing (Logistik)" />
-                            <div className="my-4 border-t border-slate-100"></div>
+                            <div className="my-6 border-t border-slate-200/60"></div>
+                            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Menu Operasional</p>
+                            <SidebarLink tab="scanner" icon={ScanBarcode} label="Smart Scanner" />
+                            <SidebarLink tab="inbound" icon={ArrowDownCircle} label="Barang Masuk (In)" />
+                            <SidebarLink tab="outbound" icon={ArrowUpCircle} label="Barang Keluar (Out)" />
+                            <SidebarLink tab="packing" icon={Archive} label="Worksheet Packing" />
+                            <SidebarLink tab="retur" icon={RotateCcw} label="Retur Barang" /> 
+                            <div className="my-6 border-t border-slate-200/60"></div>
                             <SidebarLink tab="reports" icon={History} label="Laporan & History" />
-                            {isAdmin && <SidebarLink tab="users" icon={Users} label="User Admin" />}
+                            {isAdmin && <SidebarLink tab="users" icon={Users} label="Manajemen User" />}
                         </nav>
                     </aside>
                     
-                    {isSidebarOpen && <div className="fixed inset-0 bg-black/20 z-30 md:hidden backdrop-blur-sm" onClick={()=>setIsSidebarOpen(false)}></div>}
+                    {isSidebarOpen && <div className="fixed inset-0 bg-slate-900/20 z-30 md:hidden backdrop-blur-sm transition-opacity" onClick={()=>setIsSidebarOpen(false)}></div>}
 
                     <main className="flex-1 flex flex-col relative h-full overflow-hidden w-full">
-                        <header className="h-14 glass-header flex items-center justify-between px-4 shrink-0 z-20">
-                            <div className="flex items-center gap-3">
-                                <button onClick={activeTab==='dashboard' ? ()=>setIsSidebarOpen(true) : ()=>navigateTo('dashboard')} className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">{activeTab==='dashboard' ? <Menu size={20}/> : <ChevronLeft size={20}/>}</button>
-                                <h2 className="text-base font-extrabold text-slate-800 capitalize">{activeTab.replace('_', ' ')}</h2>
+                        <header className="h-20 glass-header flex items-center justify-between px-6 shrink-0 z-20">
+                            <div className="flex items-center gap-4">
+                                <button onClick={activeTab==='dashboard' ? ()=>setIsSidebarOpen(true) : ()=>navigateTo('dashboard')} className="md:hidden p-3 -ml-2 text-slate-600 hover:bg-slate-100 rounded-xl active:scale-95 transition-transform">
+                                    {activeTab==='dashboard' ? <Menu size={24}/> : <ChevronLeft size={24}/>}
+                                </button>
+                                <div>
+                                    <h2 className="text-xl font-extrabold text-slate-800 capitalize tracking-tight">{activeTab.replace('_', ' ')}</h2>
+                                    <p className="text-xs text-slate-400 font-medium hidden sm:block">SNM Stock Management System</p>
+                                </div>
                             </div>
-                            <div onClick={()=>{setProfileData({name: currentUser.name, username: currentUser.username, password: currentUser.password}); setModals(p=>({...p, profile:true}))}} className="flex items-center gap-2 cursor-pointer hover:bg-slate-100 p-1.5 rounded-xl transition-colors">
-                                <div className="text-right hidden xs:block"><p className="text-xs font-bold text-slate-800">{currentUser.name}</p><p className="text-[10px] text-slate-400 capitalize">{currentUser.role}</p></div>
-                                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-blue-500/30 shadow-lg">{currentUser.name.charAt(0)}</div>
+                            <div onClick={()=>{setProfileData({name: currentUser.name, username: currentUser.username, password: currentUser.password}); setModals(p=>({...p, profile:true}))}} className="flex items-center gap-3 cursor-pointer group">
+                                <div className="text-right hidden xs:block">
+                                    <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{currentUser.name}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{currentUser.role}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all group-active:scale-95 border-2 border-white">
+                                    {currentUser.name.charAt(0)}
+                                </div>
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-6 custom-scrollbar">
-                            <div className="max-w-5xl mx-auto">
+                        <div className="flex-1 overflow-y-auto p-5 pb-28 md:pb-8 custom-scrollbar">
+                            <div className="max-w-6xl mx-auto">
                                 {/* DASHBOARD */}
                                 {activeTab === 'dashboard' && (
-                                    <div className="space-y-5 animate-fade-in">
+                                    <div className="space-y-6 animate-fade-in">
+                                        {/* Stats Grid */}
                                         <div className="grid gap-6 md:grid-cols-3">
-                                            <div className="md:col-span-2 space-y-4">
-                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><Warehouse size={18} className="text-blue-600"/> Stok per Lokasi</h3>
-                                                {locations.map(loc => {
-                                                    const locItems = inventory.filter(i => i.location === loc.code);
-                                                    if(locItems.length === 0) return null;
-                                                    return (
-                                                        <div key={loc.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                                            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center"><div><h4 className="font-bold text-slate-700 text-sm">{loc.name}</h4><p className="text-[10px] font-mono text-slate-400">KODE: {loc.code}</p></div><span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded-lg">{formatNumber(locItems.reduce((a,b)=>a+b.qty,0))} Unit</span></div>
-                                                            <div className="divide-y divide-slate-50">{locItems.map(item => (<div key={item.id} className="px-4 py-3 flex justify-between items-center hover:bg-slate-50 transition-colors"><div><div className="font-bold text-slate-800 text-sm">{item.name}</div><div className="text-xs font-mono text-slate-400">{item.sku}</div></div><div className={`text-sm font-bold px-2.5 py-1 rounded-lg ${item.qty < 10 ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>{formatNumber(item.qty)}</div></div>))}</div>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                            <div className="space-y-4">
-                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><Activity size={18} className="text-orange-500"/> Transaksi Hari Ini</h3>
-                                                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 min-h-[200px]">
-                                                    {todayLogs.length === 0 ? <div className="text-center py-8 text-slate-400"><div className="bg-slate-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2"><Calendar size={20}/></div><p className="text-xs">Belum ada transaksi hari ini</p></div> : <div className="space-y-3">{todayLogs.map(log => (<div key={log.id} className="flex items-start gap-3 pb-3 border-b border-slate-50 last:border-0 last:pb-0"><div className={`p-1.5 rounded-lg mt-0.5 ${log.type==='in'?'bg-emerald-100 text-emerald-600': log.type==='out'?'bg-orange-100 text-orange-600':'bg-blue-100 text-blue-600'}`}>{log.type==='in'?<ArrowDownCircle size={14}/>: log.type==='out'?<ArrowUpCircle size={14}/>:<ArrowRightLeft size={14}/>}</div><div className="flex-1 min-w-0"><div className="flex justify-between items-start"><p className="font-bold text-slate-700 text-xs truncate">{log.itemName}</p><span className={`text-xs font-bold ml-2 ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{formatNumber(log.qty)}</span></div><p className="text-[10px] text-slate-400 mt-0.5">{log.date.split(',')[1]} • {log.user}</p></div></div>))}</div>}
+                                            <div className="md:col-span-2 space-y-5">
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg"><Warehouse size={22} className="text-blue-600"/> Ringkasan Lokasi</h3>
                                                 </div>
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    {locations.map(loc => {
+                                                        const locItems = inventory.filter(i => i.location === loc.code);
+                                                        const totalItem = locItems.reduce((a,b)=>a+b.qty,0);
+                                                        if(locItems.length === 0) return null;
+                                                        return (
+                                                            <Card key={loc.id} className="relative overflow-hidden group">
+                                                                {/* BACKGROUND WAREHOUSE ICON REMOVED FOR CLARITY */}
+                                                                <div className="relative z-10">
+                                                                    <div className="flex justify-between items-start mb-3">
+                                                                        <div>
+                                                                            <h4 className="font-bold text-slate-800 text-lg">{loc.name}</h4>
+                                                                            <div className="flex items-center gap-2 mt-1">
+                                                                                <span className="text-[10px] font-mono font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-500">{loc.code}</span>
+                                                                                {loc.code === 'RETUR' && <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-0.5 rounded">Area Retur</span>}
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="text-2xl font-extrabold text-blue-600">{formatNumber(totalItem)}</span>
+                                                                    </div>
+                                                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                                        <div className={`h-full rounded-full ${loc.code==='RETUR'?'bg-red-500':'bg-blue-500'}`} style={{width: '40%'}}></div>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-slate-400 mt-2 font-medium text-right">{locItems.length} Jenis Barang</p>
+                                                                </div>
+                                                            </Card>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-5">
+                                                <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg"><Activity size={22} className="text-orange-500"/> Aktivitas Terbaru</h3>
+                                                <Card className="min-h-[300px] p-0 overflow-hidden flex flex-col">
+                                                    {todayLogs.length === 0 ? (
+                                                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400">
+                                                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                                                <Zap size={24} className="opacity-50"/>
+                                                            </div>
+                                                            <p className="text-sm font-medium">Belum ada transaksi hari ini</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                                            {todayLogs.map((log, idx) => (
+                                                                <div key={log.id} className={`p-4 flex items-start gap-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors ${idx===0 ? 'bg-blue-50/30' : ''}`}>
+                                                                    <div className={`p-2.5 rounded-xl shrink-0 shadow-sm ${log.type==='in'?'bg-emerald-100 text-emerald-600': log.type==='out'?'bg-orange-100 text-orange-600': log.type==='retur'?'bg-red-100 text-red-600' :'bg-blue-100 text-blue-600'}`}>
+                                                                        {log.type==='in'?<ArrowDownCircle size={18}/>: log.type==='out'?<ArrowUpCircle size={18}/>:log.type==='retur'?<RotateCcw size={18}/>:<ArrowRightLeft size={18}/>}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex justify-between items-center">
+                                                                            <p className="font-bold text-slate-800 text-sm truncate">{log.itemName}</p>
+                                                                            <span className={`text-sm font-bold ml-2 ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{formatNumber(log.qty)}</span>
+                                                                        </div>
+                                                                        <div className="flex justify-between items-center mt-1">
+                                                                             <p className="text-[11px] text-slate-500 flex items-center gap-1"><User size={10}/> {log.user}</p>
+                                                                             <p className="text-[10px] text-slate-400">{log.date.split(',')[1]}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </Card>
                                             </div>
                                         </div>
                                     </div>
@@ -897,81 +995,154 @@
                                 {/* PACKING MENU */}
                                 {activeTab === 'packing' && (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Single Hari Ini</p><p className="text-2xl font-extrabold text-blue-600">{formatNumber(totalPackedSingle)}</p></div>
-                                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Total Bundle Hari Ini</p><p className="text-2xl font-extrabold text-purple-600">{formatNumber(totalPackedBundle)}</p></div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <StatCard title="Total Single" value={formatNumber(totalPackedSingle)} icon={Package} colorClass="text-blue-600" bgClass="bg-blue-500"/>
+                                            <StatCard title="Total Bundle" value={formatNumber(totalPackedBundle)} icon={Layers} colorClass="text-purple-600" bgClass="bg-purple-500"/>
                                         </div>
-                                        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                                            <div className="bg-slate-800 p-4 text-white flex justify-between items-center"><h3 className="font-bold flex items-center gap-2"><ClipboardList size={18}/> Worksheet Packing</h3><p className="text-xs opacity-70 font-mono">{getFormattedDate(Date.now()).split(',')[0]}</p></div>
-                                            <div className="p-4 space-y-3">
-                                                <div className="relative mb-4"><Search className="absolute left-3 top-2.5 text-slate-400" size={18}/><input className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 outline-none text-sm" placeholder="Filter nama barang..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /></div>
-                                                <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                        <Card className="p-0 overflow-hidden">
+                                            <div className="bg-slate-900 p-6 text-white flex justify-between items-center bg-[url('https://grainy-gradients.vercel.app/noise.svg')]">
+                                                <h3 className="font-bold flex items-center gap-3 text-lg"><ClipboardList size={24}/> Worksheet Packing</h3>
+                                                <p className="text-xs font-mono bg-white/10 px-3 py-1 rounded-full backdrop-blur">{getFormattedDate(Date.now()).split(',')[0]}</p>
+                                            </div>
+                                            <div className="p-6 space-y-6">
+                                                <div className="relative group">
+                                                    <Search className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20}/>
+                                                    <input className="input-field w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-sm font-bold" placeholder="Filter nama barang..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                                                </div>
+                                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[500px] overflow-y-auto custom-scrollbar p-1">
                                                     {groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map(item => {
                                                         const inputData = packingInput[item.sku] || { single: '', bundling: '' };
                                                         const total = (parseInt(inputData.single) || 0) + (parseInt(inputData.bundling) || 0);
                                                         return (
-                                                            <div key={item.sku} className="border border-slate-100 rounded-xl p-3 hover:bg-slate-50 transition-colors">
-                                                                <div className="flex justify-between items-start mb-2">
+                                                            <div key={item.sku} className="border border-slate-100 rounded-2xl p-4 hover:shadow-lg hover:border-blue-200 transition-all bg-white group">
+                                                                <div className="flex justify-between items-start mb-3">
                                                                     <div>
-                                                                        <p className="font-bold text-slate-800 text-sm">{item.name}</p>
-                                                                        <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
+                                                                        <p className="font-bold text-slate-800 text-sm line-clamp-1">{item.name}</p>
+                                                                        <p className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded inline-block mt-1 group-hover:text-blue-500 transition-colors">{item.sku}</p>
                                                                     </div>
-                                                                    <div className="text-right">
-                                                                         <span className="text-[10px] bg-slate-100 px-2 py-1 rounded-lg text-slate-500 font-bold">Stok: {formatNumber(item.totalQty)}</span>
-                                                                    </div>
+                                                                    <span className="text-[10px] bg-slate-100 px-2 py-1 rounded-lg text-slate-500 font-bold">Stok: {formatNumber(item.totalQty)}</span>
                                                                 </div>
-                                                                <div className="grid grid-cols-3 gap-2 items-center">
-                                                                    <div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-1">Single</label><input type="number" min="0" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-center font-bold focus:border-blue-500 outline-none" placeholder="0" value={inputData.single} onChange={(e) => handlePackingInput(item.sku, 'single', e.target.value)}/></div>
-                                                                    <div><label className="text-[8px] font-bold text-slate-400 uppercase block mb-1">Bundling</label><input type="number" min="0" className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-center font-bold focus:border-purple-500 outline-none" placeholder="0" value={inputData.bundling} onChange={(e) => handlePackingInput(item.sku, 'bundling', e.target.value)}/></div>
-                                                                    <div className="text-center bg-slate-100 rounded-lg py-1 h-full flex flex-col justify-center"><span className="text-[8px] font-bold text-slate-400 uppercase block">Total</span><span className="font-bold text-slate-700 text-sm">{total}</span></div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="flex-1">
+                                                                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 text-center">Single</label>
+                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100" placeholder="0" value={inputData.single} onChange={(e) => handlePackingInput(item.sku, 'single', e.target.value)}/>
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 text-center">Bundle</label>
+                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100 focus:border-purple-500" placeholder="0" value={inputData.bundling} onChange={(e) => handlePackingInput(item.sku, 'bundling', e.target.value)}/>
+                                                                    </div>
+                                                                    <div className="w-14 flex flex-col items-center justify-center bg-slate-50 rounded-xl h-[38px] mt-5">
+                                                                        <span className="text-[10px] font-bold text-slate-600">{total}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         );
                                                     })}
                                                 </div>
-                                                <div className="pt-2 border-t border-slate-100"><button onClick={savePackingData} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-95 transition-all"><Save size={18}/> Simpan Laporan Packing</button></div>
+                                                <button onClick={savePackingData} className="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                                    <Save size={20}/> Simpan Laporan Packing
+                                                </button>
                                             </div>
-                                        </div>
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {/* RETUR MENU */}
+                                {activeTab === 'retur' && (
+                                    <div className="space-y-6 animate-fade-in">
+                                        <Card className="p-0 overflow-hidden border-0 shadow-2xl">
+                                            <div className="bg-gradient-to-r from-red-600 to-red-500 p-6 text-white flex justify-between items-center">
+                                                <div>
+                                                    <h3 className="font-bold flex items-center gap-3 text-xl"><RotateCcw size={24}/> Retur Barang</h3>
+                                                    <p className="text-xs opacity-80 mt-1 font-medium">Input barang retur ke lokasi khusus 'RETUR'</p>
+                                                </div>
+                                                {!isAdmin && <div className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 border border-white/20"><Lock size={14}/> View Only</div>}
+                                            </div>
+                                            <div className="p-6 space-y-6 bg-white">
+                                                <div className="relative">
+                                                    <Search className="absolute left-4 top-3.5 text-slate-400" size={20}/>
+                                                    <input className="input-field w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-sm font-bold" placeholder="Cari produk retur..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                                                </div>
+                                                
+                                                <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+                                                    {groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map(item => {
+                                                        const qtyRetur = returInput[item.sku] || '';
+                                                        return (
+                                                            <div key={item.sku} className="border border-slate-100 rounded-2xl p-4 hover:bg-slate-50 transition-all flex flex-col sm:flex-row justify-between items-center gap-4 group">
+                                                                <div className="flex-1 w-full">
+                                                                    <p className="font-bold text-slate-800 text-base group-hover:text-red-600 transition-colors">{item.name}</p>
+                                                                    <p className="text-xs text-slate-400 font-mono mt-1">{item.sku}</p>
+                                                                </div>
+                                                                <div className="w-full sm:w-48 flex items-center gap-3">
+                                                                    <label className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">Jml Retur:</label>
+                                                                    <input 
+                                                                        type="number" 
+                                                                        min="0" 
+                                                                        disabled={!isAdmin}
+                                                                        className={`w-full p-3 border rounded-xl text-sm font-bold text-center outline-none transition-all ${!isAdmin ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200' : 'bg-white border-slate-200 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'}`} 
+                                                                        placeholder="0" 
+                                                                        value={qtyRetur} 
+                                                                        onChange={(e) => handleReturInput(item.sku, e.target.value)}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {isAdmin && (
+                                                    <div className="pt-6 border-t border-slate-100">
+                                                        <button onClick={saveReturData} className="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-red-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                                            <Save size={20}/> Simpan Retur & Update Stok
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </Card>
                                     </div>
                                 )}
 
                                 {/* GLOBAL INVENTORY VIEW */}
                                 {activeTab === 'inventory' && (
-                                    <div className="space-y-4 animate-fade-in">
-                                        <div className="flex gap-2 sticky top-0 z-10 bg-slate-50 pb-2 pt-1">
-                                            <div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-slate-400" size={18}/><input className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:border-blue-500 outline-none shadow-sm text-sm" placeholder="Cari barang / SKU..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} /></div>
-                                            {isAdmin && <button onClick={()=>setModals(p=>({...p, add:true}))} className="bg-blue-600 text-white px-3 py-2 rounded-xl shadow-lg active:scale-95 transition-transform"><Plus size={20}/></button>}
+                                    <div className="space-y-6 animate-fade-in">
+                                        <div className="flex gap-3 sticky top-0 z-10 bg-white/80 backdrop-blur-md p-2 -mx-2 rounded-2xl shadow-sm border border-white/50">
+                                            <div className="relative flex-1 group">
+                                                <Search className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20}/>
+                                                <input className="input-field w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-bold" placeholder="Cari barang / SKU..." value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} />
+                                            </div>
+                                            {isAdmin && <button onClick={()=>setModals(p=>({...p, add:true}))} className="bg-blue-600 text-white w-12 h-12 rounded-xl shadow-lg shadow-blue-500/30 active:scale-90 transition-all flex items-center justify-center hover:bg-blue-700"><Plus size={24}/></button>}
                                         </div>
-                                        <div className="space-y-2 pb-10">
-                                            {loadingInv ? <div className="text-center p-10"><Loader2 className="animate-spin inline text-blue-500"/></div> :
+                                        <div className="grid gap-4 sm:grid-cols-2 pb-20">
+                                            {loadingInv ? <div className="col-span-full text-center p-20"><Loader2 className="animate-spin inline text-blue-500 w-10 h-10"/></div> :
                                             groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()) || i.sku.toLowerCase().includes(searchTerm.toLowerCase())).map(item => (
-                                                <div key={item.sku} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm active:bg-slate-50 transition-colors">
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div>
-                                                            <div className="font-bold text-slate-800 text-base">{item.name}</div>
-                                                            <span className="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 mt-1 inline-block">{item.sku}</span>
+                                                <Card key={item.sku} className="flex flex-col justify-between group hover:border-blue-200">
+                                                    <div>
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div>
+                                                                <div className="font-extrabold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{item.name}</div>
+                                                                <span className="text-xs font-mono bg-slate-50 px-2 py-1 rounded-lg text-slate-500 mt-2 inline-block border border-slate-100">{item.sku}</span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className={`px-3 py-1.5 rounded-xl text-sm font-extrabold shadow-sm ${item.totalQty<10?'bg-red-50 text-red-600 border border-red-100':'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>{formatNumber(item.totalQty)} Unit</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.totalQty<10?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{formatNumber(item.totalQty)} Total</span>
+                                                        
+                                                        <div className="flex flex-wrap gap-2 mb-6">
+                                                            {item.locations.map(loc => (
+                                                                <span key={loc.id} className={`border px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm ${loc.code === 'RETUR' ? 'bg-red-50 text-red-700 border-red-100' : 'bg-white text-slate-600 border-slate-100'}`}>
+                                                                    <MapPin size={12} className={loc.code==='RETUR'?'text-red-500':'text-blue-500'}/> {loc.code}: {formatNumber(loc.qty)}
+                                                                </span>
+                                                            ))}
                                                         </div>
-                                                    </div>
-                                                    
-                                                    {/* Locations Chips */}
-                                                    <div className="flex flex-wrap gap-2 mb-3">
-                                                        {item.locations.map(loc => (
-                                                            <span key={loc.id} className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded-md text-[10px] font-bold flex items-center gap-1">
-                                                                <MapPin size={10}/> {loc.code}: {formatNumber(loc.qty)}
-                                                            </span>
-                                                        ))}
                                                     </div>
 
-                                                    <div className="flex gap-2 justify-end border-t border-slate-50 pt-3">
-                                                        <button onClick={()=>openMoveModal(item)} className="flex-1 bg-slate-800 text-white py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-900">
-                                                            <ArrowRightLeft size={14}/> Pindah / Transfer
+                                                    <div className="flex gap-3 border-t border-slate-50 pt-4 mt-auto">
+                                                        <button onClick={()=>openMoveModal(item)} className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-lg shadow-slate-500/20">
+                                                            <ArrowRightLeft size={14}/> Transfer Stok
                                                         </button>
-                                                        {isAdmin && <button onClick={()=>deleteDoc('inventory', item.id, "Hapus barang ini?")} className="px-3 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><Trash2 size={16}/></button>}
+                                                        {isAdmin && <button onClick={()=>deleteDoc('inventory', item.id, "Hapus barang ini?")} className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 active:scale-90 transition-colors"><Trash2 size={16}/></button>}
                                                     </div>
-                                                </div>
+                                                </Card>
                                             ))}
                                         </div>
                                     </div>
@@ -980,57 +1151,103 @@
                                 {/* SCANNER */}
                                 {activeTab === 'scanner' && (
                                     <div className="max-w-md mx-auto animate-fade-in">
-                                        <div className="bg-slate-800 rounded-3xl p-6 text-center text-white shadow-xl relative overflow-hidden mb-4">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-600 opacity-20 pointer-events-none"></div>
+                                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-center text-white shadow-2xl shadow-blue-900/20 relative overflow-hidden mb-6 border border-white/10">
+                                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+                                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                            
                                             <div className="relative z-10">
-                                                <h2 className="text-lg font-bold mb-1">Cek Stok Cepat</h2><p className="text-white/60 text-xs mb-4">Scan Barcode / Ketik SKU</p>
-                                                {isScanning ? <div className="mb-4 relative bg-black rounded-2xl overflow-hidden border-2 border-white/20 animate-fade-in"><div id="reader" className="min-h-[250px] bg-black"></div><button onClick={stopScanner} className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full z-10 shadow-lg"><X size={16}/></button></div> : <button onClick={startScanner} className="mb-4 w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-colors active:bg-white/30"><Camera size={18}/> Buka Kamera</button>}
-                                                <form onSubmit={(e)=>{e.preventDefault(); handleScanLogic(scanQuery)}} className="relative"><input type="text" className="w-full p-4 pl-10 bg-white/10 backdrop-blur border border-white/20 rounded-xl text-white placeholder-white/40 font-mono text-lg uppercase focus:bg-white/20 outline-none text-center" placeholder="KETIK SKU" value={scanQuery} onChange={e => setScanQuery(e.target.value)} /><Search className="absolute left-4 top-5 text-white/40" size={18}/></form>
+                                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/10 backdrop-blur mb-4 shadow-inner border border-white/10">
+                                                    <ScanBarcode size={24} className="text-blue-300"/>
+                                                </div>
+                                                <h2 className="text-xl font-bold mb-1">Smart Scanner</h2>
+                                                <p className="text-blue-200/60 text-xs mb-6 font-medium">Arahkan kamera ke barcode barang atau lokasi</p>
+                                                
+                                                {isScanning ? (
+                                                    <div className="mb-6 relative bg-black rounded-3xl overflow-hidden border-4 border-blue-500/30 shadow-2xl shadow-blue-500/20 animate-fade-in aspect-square">
+                                                        <div id="reader" className="w-full h-full bg-black"></div>
+                                                        <div className="absolute inset-0 border-[2px] border-blue-400/50 rounded-3xl pointer-events-none m-4">
+                                                            <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-blue-400"></div>
+                                                            <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-blue-400"></div>
+                                                            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-blue-400"></div>
+                                                            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-blue-400"></div>
+                                                        </div>
+                                                        <button onClick={stopScanner} className="absolute top-4 right-4 bg-black/50 backdrop-blur text-white p-2 rounded-full z-20 hover:bg-red-500 transition-colors"><X size={18}/></button>
+                                                    </div>
+                                                ) : (
+                                                    <button disabled={scannerLoading} onClick={startScanner} className="mb-6 w-full py-5 bg-blue-600 hover:bg-blue-500 rounded-2xl flex items-center justify-center gap-3 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                                                        {scannerLoading ? <Loader2 className="animate-spin"/> : <><Camera size={20}/> Buka Kamera</>}
+                                                    </button>
+                                                )}
+                                                
+                                                <div className="relative group">
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                                                    <form onSubmit={(e)=>{e.preventDefault(); handleScanLogic(scanQuery)}} className="relative">
+                                                        <input type="text" className="w-full p-4 pl-12 bg-white/5 backdrop-blur border border-white/10 rounded-2xl text-white placeholder-white/30 font-mono text-lg uppercase focus:bg-white/10 outline-none text-center transition-all" placeholder="KETIK SKU MANUAL" value={scanQuery} onChange={e => setScanQuery(e.target.value)} />
+                                                        <Search className="absolute left-5 top-5 text-white/30" size={20}/>
+                                                    </form>
+                                                </div>
                                             </div>
                                         </div>
+                                        
                                         {scanResult && (
-                                            <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-5 animate-slide-up">
-                                                {/* UI SCANNER DIPERBAIKI UNTUK MENAMPILKAN TOTAL GLOBAL & RINCIAN PER LOKASI */}
+                                            <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-2xl p-6 animate-slide-up">
                                                 {scanResult.type === 'item' ? (
                                                     <div className="text-center">
-                                                        <h3 className="text-lg font-bold text-slate-800">{scanResult.data.name}</h3>
-                                                        <p className="font-mono text-slate-400 text-sm mb-4">{scanResult.data.sku}</p>
+                                                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold shadow-inner">
+                                                            {scanResult.data.name.charAt(0)}
+                                                        </div>
+                                                        <h3 className="text-xl font-extrabold text-slate-800 leading-tight">{scanResult.data.name}</h3>
+                                                        <p className="font-mono text-slate-400 text-sm mb-6 bg-slate-50 inline-block px-3 py-1 rounded-lg mt-2">{scanResult.data.sku}</p>
                                                         
-                                                        <div className="mb-6">
-                                                            <span className="bg-blue-100 text-blue-700 px-6 py-3 rounded-2xl text-3xl font-extrabold block w-fit mx-auto">
-                                                                {formatNumber(scanResult.data.totalQty)}
-                                                                <span className="text-sm font-bold ml-2 text-blue-500">Total</span>
-                                                            </span>
+                                                        <div className="mb-8 p-1 bg-slate-50 rounded-3xl inline-block">
+                                                            <div className="bg-white px-8 py-4 rounded-[1.2rem] shadow-sm border border-slate-100">
+                                                                <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 block">
+                                                                    {formatNumber(scanResult.data.totalQty)}
+                                                                </span>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Unit</span>
+                                                            </div>
                                                         </div>
 
-                                                        <div className="space-y-2 text-left">
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase ml-1">Rincian Lokasi:</p>
-                                                            <div className="grid grid-cols-2 gap-2">
+                                                        <div className="space-y-3 text-left">
+                                                            <p className="text-xs font-bold text-slate-400 uppercase ml-2 tracking-wider">Tersedia di:</p>
+                                                            <div className="grid grid-cols-2 gap-3">
                                                                 {scanResult.data.locations.map((loc, idx) => (
-                                                                    <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col items-center">
-                                                                        <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Lokasi {loc.location}</div>
-                                                                        <div className="text-lg font-bold text-slate-800">{formatNumber(loc.qty)}</div>
+                                                                    <div key={idx} className={`p-3 rounded-2xl border flex flex-col items-center justify-center text-center transition-all hover:scale-105 cursor-default shadow-sm ${loc.location === 'RETUR' ? 'bg-red-50 border-red-100' : 'bg-white border-slate-100'}`}>
+                                                                        <div className={`text-[10px] uppercase font-bold mb-1 ${loc.location === 'RETUR' ? 'text-red-400' : 'text-slate-400'}`}>{loc.location}</div>
+                                                                        <div className="text-xl font-bold text-slate-800">{formatNumber(loc.qty)}</div>
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 ) : scanResult.type === 'location' ? (
-                                                    <div><div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100"><div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center"><Warehouse size={20}/></div><div><h3 className="font-bold text-slate-800">{scanResult.data.name}</h3><p className="text-xs text-slate-500 font-mono">{scanResult.data.code}</p></div></div><div className="space-y-2">{scanResult.items.map(i=>(<div key={i.id} className="flex justify-between p-2 bg-slate-50 rounded-lg"><span className="text-slate-700 text-sm font-medium">{i.name}</span><span className="font-bold text-blue-600 text-sm">{formatNumber(i.qty)}</span></div>))}</div></div>
+                                                    <div>
+                                                        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                                                            <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-100"><Warehouse size={28}/></div>
+                                                            <div><h3 className="text-xl font-bold text-slate-800">{scanResult.data.name}</h3><p className="text-sm text-slate-500 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded inline-block mt-1">{scanResult.data.code}</p></div>
+                                                        </div>
+                                                        <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+                                                            {scanResult.items.map(i=>(<div key={i.id} className="flex justify-between p-3 bg-slate-50 rounded-xl items-center"><span className="text-slate-700 text-sm font-bold">{i.name}</span><span className="font-extrabold text-blue-600 text-sm bg-white px-2 py-1 rounded shadow-sm">{formatNumber(i.qty)}</span></div>))}
+                                                        </div>
+                                                    </div>
                                                 ) : (
-                                                    <div className="text-center py-4 text-slate-400"><AlertTriangle size={24} className="mx-auto mb-1 opacity-50"/><p className="text-sm">Data tidak ditemukan</p></div>
+                                                    <div className="text-center py-8 text-slate-400 flex flex-col items-center">
+                                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3 animate-bounce">
+                                                            <AlertTriangle size={28} className="opacity-50"/>
+                                                        </div>
+                                                        <p className="text-sm font-medium">Data tidak ditemukan dalam sistem.</p>
+                                                    </div>
                                                 )}
 
-                                                {/* TOMBOL ACTION BARU */}
                                                 {scanResult.type !== 'not_found' && (
-                                                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
-                                                        <button onClick={() => handleScanAction('inbound')} className="bg-emerald-600 text-white p-3 rounded-xl font-bold text-sm flex flex-col items-center gap-1 shadow-lg active:scale-95 transition-transform hover:bg-emerald-700">
-                                                            <ArrowDownCircle size={20} />
-                                                            <span>Masuk (Inbound)</span>
+                                                    <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-slate-100">
+                                                        <button onClick={() => handleScanAction('inbound')} className="bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-2xl font-bold text-sm flex flex-col items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all">
+                                                            <ArrowDownCircle size={24} />
+                                                            <span>Inbound</span>
                                                         </button>
-                                                        <button onClick={() => handleScanAction('outbound')} className="bg-orange-600 text-white p-3 rounded-xl font-bold text-sm flex flex-col items-center gap-1 shadow-lg active:scale-95 transition-transform hover:bg-orange-700">
-                                                            <ArrowUpCircle size={20} />
-                                                            <span>Keluar (Outbound)</span>
+                                                        <button onClick={() => handleScanAction('outbound')} className="bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-2xl font-bold text-sm flex flex-col items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
+                                                            <ArrowUpCircle size={24} />
+                                                            <span>Outbound</span>
                                                         </button>
                                                     </div>
                                                 )}
@@ -1039,51 +1256,46 @@
                                     </div>
                                 )}
 
-                                {/* INBOUND/OUTBOUND */}
+                                {/* INBOUND/OUTBOUND FORM */}
                                 {['inbound', 'outbound'].includes(activeTab) && (
                                     <div className="max-w-lg mx-auto animate-fade-in">
-                                        <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
-                                            <div className={`p-5 ${activeTab==='inbound'?'bg-emerald-600':'bg-orange-600'} text-white`}>
-                                                <div className="flex items-center gap-3">
-                                                    {activeTab==='inbound'?<ArrowDownCircle size={24}/>:<ArrowUpCircle size={24}/>}
-                                                    <h2 className="text-lg font-bold">{activeTab==='inbound'?'Barang Masuk':'Barang Keluar'}</h2>
+                                        <div className="bg-white rounded-[2rem] shadow-2xl shadow-slate-200 border border-white overflow-hidden">
+                                            <div className={`p-6 ${activeTab==='inbound'?'bg-gradient-to-r from-emerald-500 to-teal-500':'bg-gradient-to-r from-orange-500 to-red-500'} text-white relative overflow-hidden`}>
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                                                <div className="flex items-center gap-4 relative z-10">
+                                                    <div className="p-3 bg-white/20 backdrop-blur rounded-xl">
+                                                        {activeTab==='inbound'?<ArrowDownCircle size={28}/>:<ArrowUpCircle size={28}/>}
+                                                    </div>
+                                                    <div>
+                                                        <h2 className="text-2xl font-extrabold tracking-tight">{activeTab==='inbound'?'Barang Masuk':'Barang Keluar'}</h2>
+                                                        <p className="text-white/80 text-sm font-medium mt-0.5">Input transaksi stok {activeTab==='inbound'?'masuk':'keluar'}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="p-5 space-y-4">
-                                                <div>
-                                                    {/* IMPLEMENTASI SEARCHABLE INPUT PENGGANTI SELECT LAMA */}
-                                                    {renderItemSearchInput()}
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-8 space-y-6">
+                                                <div>{renderItemSearchInput()}</div>
+                                                <div className="grid grid-cols-2 gap-5">
                                                     <div>
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Jumlah</label>
+                                                        <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Jumlah</label>
                                                         <input 
-                                                            type="number" 
-                                                            min="1" 
-                                                            // VALIDASI MAX STOCK (VISUAL - DISABLING JIKA LEBIH DARI STOK)
-                                                            className={`w-full p-3 bg-slate-50 rounded-xl border outline-none font-bold text-lg text-center ${
-                                                                activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0) 
-                                                                ? 'border-red-500 text-red-500 focus:border-red-500' 
-                                                                : 'border-slate-200 focus:border-blue-500'
-                                                            }`}
-                                                            value={transaction.qty} 
-                                                            onChange={e=>setTransaction({...transaction, qty:e.target.value})} 
+                                                            type="number" min="1" 
+                                                            className={`input-field w-full p-4 rounded-2xl outline-none font-black text-2xl text-center border ${activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0) ? 'border-red-500 text-red-500 bg-red-50' : 'border-slate-200 text-slate-800'}`}
+                                                            value={transaction.qty} onChange={e=>setTransaction({...transaction, qty:e.target.value})} 
                                                         />
                                                     </div>
                                                     <div>
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Lokasi Rak</label>
+                                                        <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Lokasi Rak</label>
                                                         {activeTab==='inbound' ? (
-                                                            <select className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm" value={transaction.targetLocation} onChange={e=>setTransaction({...transaction, targetLocation:e.target.value})}>
+                                                            <select className="input-field w-full p-4 rounded-2xl border border-slate-200 outline-none text-sm font-bold bg-white appearance-none" value={transaction.targetLocation} onChange={e=>setTransaction({...transaction, targetLocation:e.target.value})}>
                                                                 <option value="">-- Pilih --</option>
-                                                                {locations.map(l=><option key={l.id} value={l.code}>{l.code}</option>)}
+                                                                {locations.filter(l => l.code !== 'RETUR').map(l=><option key={l.id} value={l.code}>{l.code}</option>)}
                                                             </select>
                                                         ) : (
                                                             <div>
-                                                                <input disabled className="w-full p-3 bg-slate-100 text-slate-500 rounded-xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
-                                                                {/* TAMPILAN INFO MAX STOCK DI BAWAH LOKASI (KHUSUS OUTBOUND) */}
+                                                                <input disabled className="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
                                                                 {activeTab === 'outbound' && transaction.itemId && (
-                                                                    <p className="text-[10px] text-slate-400 text-center mt-1">
-                                                                        Max Stock: <span className="font-bold text-slate-600">{inventory.find(i=>i.id===transaction.itemId)?.qty || 0}</span>
+                                                                    <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium">
+                                                                        Stok Max: <span className="text-slate-800 font-bold">{inventory.find(i=>i.id===transaction.itemId)?.qty || 0}</span>
                                                                     </p>
                                                                 )}
                                                             </div>
@@ -1091,16 +1303,11 @@
                                                     </div>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Catatan</label>
-                                                    <input type="text" className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 outline-none text-sm" placeholder="Keterangan transaksi..." value={transaction.notes} onChange={e=>setTransaction({...transaction, notes:e.target.value})} />
+                                                    <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Catatan (Opsional)</label>
+                                                    <input type="text" className="input-field w-full p-4 bg-white rounded-2xl border border-slate-200 outline-none text-sm font-medium" placeholder="Contoh: PO-001, Restock..." value={transaction.notes} onChange={e=>setTransaction({...transaction, notes:e.target.value})} />
                                                 </div>
-                                                <button 
-                                                    onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} 
-                                                    // DISABLED JIKA STOCK KURANG (KHUSUS OUTBOUND)
-                                                    disabled={activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0)}
-                                                    className={`w-full py-3.5 rounded-xl text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-700':'bg-orange-600 hover:bg-orange-700'}`}
-                                                >
-                                                    PROSES SIMPAN
+                                                <button onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} disabled={activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0)} className={`w-full py-4 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30':'bg-orange-600 hover:bg-orange-500 shadow-orange-500/30'}`}>
+                                                    SIMPAN TRANSAKSI
                                                 </button>
                                             </div>
                                         </div>
@@ -1109,20 +1316,25 @@
 
                                 {/* LOCATIONS */}
                                 {activeTab === 'locations' && (
-                                    <div className="space-y-4 animate-fade-in">
+                                    <div className="space-y-6 animate-fade-in">
                                         <div className="flex justify-between items-center">
-                                            <h3 className="font-bold text-slate-800">Daftar Lokasi</h3>
-                                            {isAdmin && <button onClick={()=>setModals(p=>({...p, loc:true}))} className="bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1"><Plus size={14}/> Tambah</button>}
+                                            <h3 className="font-bold text-slate-800 text-xl">Daftar Lokasi</h3>
+                                            {isAdmin && <button onClick={()=>setModals(p=>({...p, loc:true}))} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-700 transition-colors shadow-lg"><Plus size={16}/> Lokasi Baru</button>}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                             {locations.map(loc => (
-                                                <div key={loc.id} onClick={()=>{setSelectedLocation(loc)}} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm active:border-blue-500 relative group cursor-pointer">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <Warehouse size={20} className="text-slate-400"/>
-                                                        <span className="font-mono text-[10px] font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-500">{loc.code}</span>
+                                                <div key={loc.id} onClick={()=>{setSelectedLocation(loc)}} className={`p-6 rounded-3xl border shadow-card active:scale-95 transition-all cursor-pointer group relative overflow-hidden ${loc.code === 'RETUR' ? 'bg-red-50 border-red-100' : 'bg-white border-slate-100 hover:border-blue-200'}`}>
+                                                    {/* BACKGROUND ICON REMOVED HERE TOO */}
+                                                    <div className="relative z-10">
+                                                        <div className="flex justify-between items-start mb-3">
+                                                            <div className={`p-3 rounded-2xl ${loc.code==='RETUR'?'bg-red-100 text-red-600':'bg-blue-50 text-blue-600'}`}>
+                                                                <Warehouse size={24}/>
+                                                            </div>
+                                                        </div>
+                                                        <h4 className="font-bold text-slate-800 text-lg">{loc.name}</h4>
+                                                        <span className={`font-mono text-[10px] font-bold px-2 py-1 rounded mt-2 inline-block ${loc.code === 'RETUR' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>{loc.code}</span>
+                                                        {isAdmin && loc.code !== 'RETUR' && <button onClick={(e)=>{e.stopPropagation(); deleteDoc('locations', loc.id, "Hapus lokasi ini?")}} className="absolute bottom-4 right-4 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"><Trash2 size={18}/></button>}
                                                     </div>
-                                                    <h4 className="font-bold text-slate-800 text-sm">{loc.name}</h4>
-                                                    {isAdmin && <button onClick={(e)=>{e.stopPropagation(); deleteDoc('locations', loc.id, "Hapus lokasi ini?")}} className="absolute bottom-2 right-2 p-1.5 text-slate-300 hover:text-red-500"><Trash2 size={14}/></button>}
                                                 </div>
                                             ))}
                                         </div>
@@ -1131,40 +1343,45 @@
 
                                 {/* REPORTS */}
                                 {activeTab === 'reports' && (
-                                    <div className="space-y-4 animate-fade-in">
-                                        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                                                <h3 className="font-bold text-slate-800 flex items-center gap-2"><History size={18} className="text-blue-600"/> Filter Laporan</h3>
-                                                <button onClick={downloadExcel} className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-emerald-200 shadow-lg hover:bg-emerald-700 transition-colors"><FileSpreadsheet size={16}/> Unduh Excel</button>
+                                    <div className="space-y-6 animate-fade-in">
+                                        <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                                                <h3 className="font-bold text-slate-800 flex items-center gap-3 text-lg"><History size={22} className="text-blue-600"/> Filter Laporan</h3>
+                                                <button onClick={downloadExcel} className="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95"><FileSpreadsheet size={18}/> Unduh Excel</button>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 mb-3">
+                                            
+                                            <div className="mb-6 border-b border-slate-200 pb-6">
+                                                {renderReportSearchInput()}
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2 mb-4">
                                                 {['daily', 'weekly', 'monthly', 'custom'].map(t => (
-                                                    <button key={t} onClick={()=>setFilterType(t)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors capitalize ${filterType===t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>
-                                                        {t === 'daily' ? 'Hari Ini' : t === 'weekly' ? 'Minggu Ini' : t === 'monthly' ? 'Bulan Ini' : 'Custom'}
+                                                    <button key={t} onClick={()=>setFilterType(t)} className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all capitalize ${filterType===t ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/30' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}>
+                                                        {t === 'daily' ? 'Hari Ini' : t === 'weekly' ? '7 Hari' : t === 'monthly' ? 'Bulan Ini' : 'Custom'}
                                                     </button>
                                                 ))}
                                             </div>
                                             {filterType === 'custom' && (
-                                                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl mb-2">
-                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Dari</label><input type="date" className="w-full p-2 text-xs border rounded-lg" value={customDateStart} onChange={e=>setCustomDateStart(e.target.value)}/></div>
-                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Sampai</label><input type="date" className="w-full p-2 text-xs border rounded-lg" value={customDateEnd} onChange={e=>setCustomDateEnd(e.target.value)}/></div>
+                                                <div className="grid grid-cols-2 gap-4 p-4 bg-white border border-slate-200 rounded-2xl mb-4 shadow-inner">
+                                                    <div><label className="text-xs text-slate-400 font-bold uppercase ml-1 mb-1 block">Dari</label><input type="date" className="w-full p-3 text-xs border rounded-xl bg-slate-50 font-bold outline-none" value={customDateStart} onChange={e=>setCustomDateStart(e.target.value)}/></div>
+                                                    <div><label className="text-xs text-slate-400 font-bold uppercase ml-1 mb-1 block">Sampai</label><input type="date" className="w-full p-3 text-xs border rounded-xl bg-slate-50 font-bold outline-none" value={customDateEnd} onChange={e=>setCustomDateEnd(e.target.value)}/></div>
                                                 </div>
                                             )}
-                                        </div>
-                                        <div className="space-y-2 pb-10">
-                                            {filteredReportLogs.length === 0 ? <div className="text-center py-10 text-slate-400"><p className="text-sm">Tidak ada data pada periode ini.</p></div> : filteredReportLogs.map(log => (
-                                                <div key={log.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg shrink-0 ${log.type==='in'?'bg-emerald-50 text-emerald-600': log.type==='out'?'bg-orange-50 text-orange-600':'bg-blue-50 text-blue-600'}`}>
-                                                        {log.type==='in'?<ArrowDownCircle size={18}/>: log.type==='out'?<ArrowUpCircle size={18}/>:<ArrowRightLeft size={18}/>}
+                                        </Card>
+                                        <div className="space-y-3 pb-10">
+                                            {filteredReportLogs.length === 0 ? <div className="text-center py-12 text-slate-400"><div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3"><Clipboard size={24} className="opacity-50"/></div><p className="text-sm font-medium">Tidak ada data.</p></div> : filteredReportLogs.map(log => (
+                                                <div key={log.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:bg-slate-50 transition-colors group">
+                                                    <div className={`w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center shadow-inner ${log.type==='in'?'bg-emerald-100 text-emerald-600': log.type==='out'?'bg-orange-100 text-orange-600': log.type==='retur'?'bg-red-100 text-red-600':'bg-blue-100 text-blue-600'}`}>
+                                                        {log.type==='in'?<ArrowDownCircle size={20}/>: log.type==='out'?<ArrowUpCircle size={20}/>: log.type==='retur'?<RotateCcw size={20}/>:<ArrowRightLeft size={20}/>}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex justify-between">
-                                                            <p className="font-bold text-slate-700 text-sm truncate">{log.itemName}</p>
-                                                            <span className={`text-xs font-bold ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600':'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-':''}{formatNumber(log.qty)}</span>
+                                                            <p className="font-bold text-slate-800 text-sm truncate group-hover:text-blue-600 transition-colors">{log.itemName}</p>
+                                                            <span className={`text-sm font-black ${log.type==='in'?'text-emerald-600': log.type==='out'?'text-orange-600': log.type==='retur'?'text-red-600' :'text-blue-600'}`}>{log.type==='in'?'+': log.type==='out'?'-': log.type==='retur'?'+':''}{formatNumber(log.qty)}</span>
                                                         </div>
-                                                        <div className="flex justify-between mt-1">
-                                                            <p className="text-[10px] text-slate-400">{log.date} • {log.user}</p>
-                                                            <p className="text-[10px] text-slate-500 italic truncate max-w-[100px]">{log.notes}</p>
+                                                        <div className="flex justify-between mt-1.5">
+                                                            <p className="text-[11px] text-slate-400 font-medium">{log.date} • {log.user}</p>
+                                                            <p className="text-[11px] text-slate-500 italic truncate max-w-[120px] bg-slate-100 px-2 rounded">{log.notes}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1175,29 +1392,36 @@
 
                                 {/* USERS */}
                                 {activeTab === 'users' && isAdmin && (
-                                    <div className="space-y-4 animate-fade-in">
+                                    <div className="space-y-6 animate-fade-in">
                                         <div className="flex justify-between items-center">
-                                            <h3 className="font-bold text-slate-800">Manajemen User</h3>
-                                            <button onClick={()=>setModals(p=>({...p, users:true}))} className="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1"><UserPlus size={14}/> Tambah</button>
+                                            <h3 className="font-bold text-slate-800 text-xl">Manajemen User</h3>
+                                            <button onClick={()=>setModals(p=>({...p, users:true}))} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg hover:bg-blue-700 transition-all"><UserPlus size={16}/> Tambah User</button>
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="grid gap-4 sm:grid-cols-2">
                                             {users.map((user) => (
-                                                <div key={user.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div>
-                                                            <p className="font-bold text-slate-800 text-sm">{user.name}</p>
-                                                            <p className="text-xs text-slate-400">@{user.username} • <span className="capitalize">{user.role}</span></p>
+                                                <Card key={user.id} className="relative overflow-hidden">
+                                                    <div className="flex justify-between items-start mb-4 relative z-10">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-md ${user.role==='admin'?'bg-gradient-to-br from-purple-600 to-purple-400':'bg-gradient-to-br from-blue-500 to-cyan-400'}`}>
+                                                                {user.name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-800 text-sm">{user.name}</p>
+                                                                <p className="text-xs text-slate-400">@{user.username}</p>
+                                                            </div>
                                                         </div>
-                                                        {user.username!=='admin' && <button onClick={()=>deleteDoc('users', user.id, "Hapus user ini?")} className="text-slate-300 hover:text-red-500"><Trash2 size={16}/></button>}
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${user.role==='admin'?'bg-purple-100 text-purple-600':'bg-blue-100 text-blue-600'}`}>{user.role}</span>
                                                     </div>
-                                                    <div className="bg-slate-50 p-3 rounded-lg text-xs space-y-2">
+                                                    <div className="bg-slate-50 p-4 rounded-2xl text-xs space-y-3 relative z-10">
                                                         <div className="flex gap-2 items-center">
-                                                            <p className="text-[10px] font-bold text-slate-400 w-16">RESET:</p>
-                                                            <input className="flex-1 p-2 border border-slate-200 rounded-lg bg-white" placeholder="Password Baru" type="password" id={`pass-${user.id}`}/>
-                                                            <button onClick={() => { const newPass = document.getElementById(`pass-${user.id}`).value; if(newPass) { db.collection(COLLECTION_PATH('users')).doc(user.id).update({password: newPass}); showAlert("Password berhasil direset", "Sukses", "success"); document.getElementById(`pass-${user.id}`).value = ''; } }} className="bg-slate-800 text-white px-3 py-2 rounded-lg font-bold">OK</button>
+                                                            <p className="text-[10px] font-bold text-slate-400 w-12">RESET:</p>
+                                                            <input className="flex-1 p-2 border border-slate-200 rounded-lg bg-white outline-none focus:border-blue-500 transition-colors" placeholder="Password Baru" type="password" id={`pass-${user.id}`}/>
+                                                            <button onClick={() => { const newPass = document.getElementById(`pass-${user.id}`).value; if(newPass) { db.collection(COLLECTION_PATH('users')).doc(user.id).update({password: newPass}); showAlert("Password berhasil direset", "Sukses", "success"); document.getElementById(`pass-${user.id}`).value = ''; } }} className="bg-slate-800 text-white px-3 py-2 rounded-lg font-bold hover:bg-slate-700">OK</button>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                    {/* HANYA SEMBUNYIKAN TOMBOL HAPUS JIKA USERNAME ADALAH 'admin' */}
+                                                    {user.username !== 'admin' && <button onClick={()=>deleteDoc('users', user.id, "Hapus user ini?")} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors z-20"><Trash2 size={18}/></button>}
+                                                </Card>
                                             ))}
                                         </div>
                                     </div>
@@ -1205,76 +1429,126 @@
                             </div>
                         </div>
 
-                        <div className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 flex justify-between px-2 pb-safe z-50">
+                        {/* MOBILE NAV - GLASS EFFECT */}
+                        <div className="md:hidden fixed bottom-0 inset-x-0 glass-nav flex justify-between px-4 pb-safe pt-2 z-50">
                             <BottomNavItem icon={Home} label="Home" active={activeTab==='dashboard'} onClick={()=>navigateTo('dashboard')}/>
                             <BottomNavItem icon={Package} label="Stok" active={activeTab==='inventory'} onClick={()=>navigateTo('inventory')}/>
-                            <div className="relative -top-5"><button onClick={()=>navigateTo('scanner')} className="bg-blue-600 text-white p-4 rounded-full shadow-lg active:scale-95 transition-transform ring-4 ring-slate-50"><ScanBarcode size={24}/></button></div>
+                            <div className="relative -top-6">
+                                <button onClick={()=>navigateTo('scanner')} className="bg-gradient-to-b from-blue-500 to-blue-700 text-white w-16 h-16 rounded-full shadow-xl shadow-blue-600/40 flex items-center justify-center active:scale-90 transition-transform border-4 border-slate-50 ring-2 ring-blue-100">
+                                    <ScanBarcode size={28}/>
+                                </button>
+                            </div>
                             <BottomNavItem icon={ArrowDownCircle} label="Masuk" active={activeTab==='inbound'} onClick={()=>navigateTo('inbound')}/>
                             <BottomNavItem icon={ArrowUpCircle} label="Keluar" active={activeTab==='outbound'} onClick={()=>navigateTo('outbound')}/>
                         </div>
                     </main>
 
                     {/* --- MODALS --- */}
-                    <Modal isOpen={modals.alert.isOpen} title={modals.alert.title} type={modals.alert.type} onClose={closeAlert}><p className="text-slate-600 mb-6 text-sm">{modals.alert.message}</p><div className="flex justify-end"><button onClick={closeAlert} className="bg-slate-800 text-white px-5 py-2 rounded-xl font-bold text-sm">OK</button></div></Modal>
-                    <Modal isOpen={modals.confirm.isOpen} title="Konfirmasi" onClose={closeConfirm}><p className="text-slate-600 mb-6 text-sm">{modals.confirm.message}</p><div className="flex justify-end gap-3"><button onClick={closeConfirm} className="text-slate-500 px-4 py-2 rounded-xl font-bold text-sm">Batal</button><button onClick={() => { if(modals.confirm.onConfirm) modals.confirm.onConfirm(); closeConfirm(); }} className="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-sm">Ya</button></div></Modal>
-                    <Modal isOpen={modals.add} title="Tambah Stok" onClose={()=>setModals(p=>({...p, add:false}))}><form onSubmit={handleAddItem} className="space-y-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Nama Barang</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newItem.name} onChange={e=>setNewItem({...newItem, name:e.target.value})}/></div><div className="grid grid-cols-2 gap-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">SKU / Kode</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newItem.sku} onChange={e=>setNewItem({...newItem, sku:e.target.value.toUpperCase()})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Qty Awal</label><input type="number" min="0" className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newItem.qty} onChange={e=>setNewItem({...newItem, qty:e.target.value})}/></div></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Lokasi Rak</label><select required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newItem.location} onChange={e=>setNewItem({...newItem, location:e.target.value})}><option value="">Pilih Lokasi</option>{locations.map(l=><option key={l.id} value={l.code}>{l.code}</option>)}</select></div><button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm mt-2">Simpan</button></form></Modal>
-                    <Modal isOpen={modals.loc} title="Lokasi Baru" onClose={()=>setModals(p=>({...p, loc:false}))}><form onSubmit={async (e)=>{e.preventDefault(); if(locations.some(l=>l.code===newLocation.code)) return showAlert("Kode Lokasi sudah ada!", "Error"); await db.collection(COLLECTION_PATH('locations')).add(newLocation); setNewLocation({code:'', name:''}); setModals(p=>({...p, loc:false})); }} className="space-y-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Kode Rak</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 uppercase text-sm" value={newLocation.code} onChange={e=>setNewLocation({...newLocation, code:e.target.value.toUpperCase()})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Nama Area</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newLocation.name} onChange={e=>setNewLocation({...newLocation, name:e.target.value})}/></div><button className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold shadow-lg text-sm mt-2">Simpan</button></form></Modal>
-                    <Modal isOpen={modals.users} title="User Baru" onClose={()=>setModals(p=>({...p, users:false}))}><form onSubmit={async (e) => { e.preventDefault(); if(users.some(u=>u.username === newUser.username)) return showAlert("Username dipakai", "Error", "warning"); await db.collection(COLLECTION_PATH('users')).add(newUser); setNewUser({ username: '', password: '', name: '', role: 'staff' }); setModals(p=>({...p, users: false})); }} className="space-y-3"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Username</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.username} onChange={e=>setNewUser({...newUser, username:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Password</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Nama Lengkap</label><input required className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Role</label><select className="w-full p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-sm" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})}><option value="staff">Staff Gudang</option><option value="admin">Admin</option></select></div><button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm mt-2">Tambah User</button></form></Modal>
-                    <Modal isOpen={modals.profile} title="Keamanan Akun" onClose={()=>setModals(p=>({...p, profile:false}))}><form onSubmit={async (e) => { e.preventDefault(); if (profileData.username !== currentUser.username && users.some(u => u.username.toLowerCase() === profileData.username.toLowerCase())) { return showAlert("Username sudah dipakai user lain.", "Gagal", "warning"); } await db.collection(COLLECTION_PATH('users')).doc(currentUser.id).update({ username: profileData.username, password: profileData.password }); setModals(p=>({...p, profile: false})); showAlert("Login (Username/Password) diperbarui", "Sukses", "success"); }} className="space-y-4"><div className="text-center mb-4"><div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto shadow-lg mb-2">{profileData.name.charAt(0)}</div><div className="flex items-center justify-center gap-1 text-emerald-600 bg-emerald-50 w-fit mx-auto px-2 py-1 rounded-full"><ShieldCheck size={12} /><p className="text-[10px] font-bold uppercase tracking-wide">Akun Terverifikasi</p></div></div><div><label className="text-[10px] font-bold text-slate-400 uppercase flex justify-between">Nama Lengkap (PIC) <Lock size={12}/></label><input disabled className="w-full p-3 bg-slate-200 text-slate-500 rounded-xl border border-slate-200 text-sm font-bold cursor-not-allowed" value={profileData.name} /></div><div className="pt-2 space-y-4 border-t border-slate-100"><div><label className="text-[10px] font-bold text-slate-400 uppercase">Username Login</label><input required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:border-blue-500 outline-none transition-colors" value={profileData.username} onChange={e=>setProfileData({...profileData, username:e.target.value})}/></div><div><label className="text-[10px] font-bold text-slate-400 uppercase">Password Baru</label><input required className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:border-blue-500 outline-none transition-colors" value={profileData.password} onChange={e=>setProfileData({...profileData, password:e.target.value})}/></div></div><div className="pt-4 flex flex-col gap-3"><button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm active:scale-95 transition-transform">Simpan Perubahan</button><button type="button" onClick={() => setModals(p => ({...p, profile: false, confirm: { isOpen: true, message: "Keluar dari aplikasi?", onConfirm: () => { localStorage.removeItem('snm_active_user'); setCurrentUser(null); setIsSidebarOpen(false); }}}))} className="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold text-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"><LogOut size={16}/> Keluar Aplikasi</button></div></form></Modal>
-                    <Modal isOpen={!!selectedLocation} title={selectedLocation?.code} onClose={()=>setSelectedLocation(null)} type="info"><div className="space-y-3"><h5 className="font-bold text-slate-700 text-xs uppercase">Isi Rak: {selectedLocation?.name}</h5><div className="max-h-60 overflow-y-auto custom-scrollbar border rounded-xl border-slate-100">{inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <p className="p-4 text-center text-slate-400 italic text-xs">Rak Kosong</p> : inventory.filter(i=>i.location===selectedLocation?.code).map(i=>(<div key={i.id} className="p-2.5 border-b border-slate-50 flex justify-between items-center last:border-0"><div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono">{i.sku}</p></div><div className="flex gap-2 items-center"><span className="font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">{formatNumber(i.qty)} Unit</span></div></div>))}</div></div></Modal>
-
-                    <Modal isOpen={!!moveItem} title="Pindah / Transfer" onClose={()=>setMoveItem(null)}>
-                        {moveItem && (
-                            <form onSubmit={handleMoveItemSubmit} className="space-y-4">
-                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    <p className="text-xs text-slate-400 uppercase font-bold mb-1">Barang</p>
-                                    <p className="font-bold text-slate-800">{moveItem.name}</p>
-                                    <p className="text-xs text-slate-500 font-mono">{moveItem.sku}</p>
-                                    <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-500">
-                                        Total Global: {formatNumber(moveItem.totalQty)} Unit
+                    <Modal isOpen={modals.alert.isOpen} title={modals.alert.title} type={modals.alert.type} onClose={closeAlert}><p className="text-slate-600 mb-6 text-sm font-medium leading-relaxed">{modals.alert.message}</p><div className="flex justify-end"><button onClick={closeAlert} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-slate-700 active:scale-95 transition-all">OK, Mengerti</button></div></Modal>
+                    <Modal isOpen={modals.confirm.isOpen} title="Konfirmasi" onClose={closeConfirm}><p className="text-slate-600 mb-6 text-sm font-medium leading-relaxed">{modals.confirm.message}</p><div className="flex justify-end gap-3"><button onClick={closeConfirm} className="text-slate-500 px-5 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors">Batal</button><button onClick={() => { if(modals.confirm.onConfirm) modals.confirm.onConfirm(); closeConfirm(); }} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:bg-blue-700 active:scale-95 transition-all">Ya, Lanjutkan</button></div></Modal>
+                    
+                    <Modal isOpen={modals.add} title="Tambah Stok Baru" onClose={()=>setModals(p=>({...p, add:false}))}>
+                        <form onSubmit={handleAddItem} className="space-y-4">
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Nama Barang</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold" value={newItem.name} onChange={e=>setNewItem({...newItem, name:e.target.value})}/></div>
+                            <div className="grid grid-cols-2 gap-4"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">SKU / Kode</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold uppercase" value={newItem.sku} onChange={e=>setNewItem({...newItem, sku:e.target.value.toUpperCase()})}/></div><div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Qty Awal</label><input type="number" min="0" className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold text-center" value={newItem.qty} onChange={e=>setNewItem({...newItem, qty:e.target.value})}/></div></div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Lokasi Rak</label><select required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold bg-white" value={newItem.location} onChange={e=>setNewItem({...newItem, location:e.target.value})}><option value="">Pilih Lokasi</option>{locations.filter(l => l.code !== 'RETUR').map(l=><option key={l.id} value={l.code}>{l.code}</option>)}</select></div>
+                            <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg mt-2 active:scale-95 transition-transform">Simpan Data</button>
+                        </form>
+                    </Modal>
+                    
+                    <Modal isOpen={modals.loc} title="Tambah Lokasi" onClose={()=>setModals(p=>({...p, loc:false}))}>
+                        <form onSubmit={async (e)=>{e.preventDefault(); if(locations.some(l=>l.code===newLocation.code)) return showAlert("Kode Lokasi sudah ada!", "Error"); await db.collection(COLLECTION_PATH('locations')).add(newLocation); setNewLocation({code:'', name:''}); setModals(p=>({...p, loc:false})); }} className="space-y-4">
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Kode Rak (Singkat)</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 uppercase text-sm font-bold" value={newLocation.code} onChange={e=>setNewLocation({...newLocation, code:e.target.value.toUpperCase()})}/></div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Nama Area (Lengkap)</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold" value={newLocation.name} onChange={e=>setNewLocation({...newLocation, name:e.target.value})}/></div>
+                            <button className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold shadow-lg mt-2 active:scale-95 transition-transform">Simpan Lokasi</button>
+                        </form>
+                    </Modal>
+                    
+                    <Modal isOpen={modals.users} title="Tambah User" onClose={()=>setModals(p=>({...p, users:false}))}>
+                        <form onSubmit={async (e) => { e.preventDefault(); if(users.some(u=>u.username === newUser.username)) return showAlert("Username dipakai", "Error", "warning"); await db.collection(COLLECTION_PATH('users')).add(newUser); setNewUser({ username: '', password: '', name: '', role: 'staff' }); setModals(p=>({...p, users: false})); }} className="space-y-4">
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Username</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold" value={newUser.username} onChange={e=>setNewUser({...newUser, username:e.target.value})}/></div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Password</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold" value={newUser.password} onChange={e=>setNewUser({...newUser, password:e.target.value})}/></div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Nama Lengkap</label><input required className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold" value={newUser.name} onChange={e=>setNewUser({...newUser, name:e.target.value})}/></div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Role</label><select className="input-field w-full p-3.5 rounded-2xl border border-slate-200 text-sm font-bold bg-white" value={newUser.role} onChange={e=>setNewUser({...newUser, role:e.target.value})}><option value="staff">Staff Gudang</option><option value="admin">Admin</option></select></div>
+                            <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg mt-2 active:scale-95 transition-transform">Tambah User</button>
+                        </form>
+                    </Modal>
+                    
+                    <Modal isOpen={modals.profile} title="Pengaturan Akun" onClose={()=>setModals(p=>({...p, profile:false}))}>
+                        <form onSubmit={async (e) => { e.preventDefault(); if (profileData.username !== currentUser.username && users.some(u => u.username.toLowerCase() === profileData.username.toLowerCase())) { return showAlert("Username sudah dipakai user lain.", "Gagal", "warning"); } await db.collection(COLLECTION_PATH('users')).doc(currentUser.id).update({ username: profileData.username, password: profileData.password }); setModals(p=>({...p, profile: false})); showAlert("Login diperbarui", "Sukses", "success"); }} className="space-y-5">
+                            <div className="text-center mb-6">
+                                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-400 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto shadow-xl shadow-blue-500/30 mb-3 border-4 border-white">{profileData.name.charAt(0)}</div>
+                                <div className="flex items-center justify-center gap-2 text-emerald-600 bg-emerald-50 w-fit mx-auto px-3 py-1 rounded-full border border-emerald-100"><ShieldCheck size={14} /><p className="text-[10px] font-bold uppercase tracking-wide">Akun Terverifikasi</p></div>
+                            </div>
+                            <div><label className="text-xs font-bold text-slate-400 uppercase flex justify-between ml-1 mb-1">Nama Lengkap <Lock size={12}/></label><input disabled className="w-full p-4 bg-slate-50 text-slate-500 rounded-2xl border border-slate-200 text-sm font-bold cursor-not-allowed" value={profileData.name} /></div>
+                            <div className="pt-2 space-y-4 border-t border-slate-100">
+                                <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Username Login</label><input required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold" value={profileData.username} onChange={e=>setProfileData({...profileData, username:e.target.value})}/></div>
+                                <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Password Baru</label><input required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold" value={profileData.password} onChange={e=>setProfileData({...profileData, password:e.target.value})}/></div>
+                            </div>
+                            <div className="pt-4 flex flex-col gap-3">
+                                <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">Simpan Perubahan</button>
+                                <button type="button" onClick={() => setModals(p => ({...p, profile: false, confirm: { isOpen: true, message: "Yakin ingin keluar?", onConfirm: () => { localStorage.removeItem('snm_active_user'); setCurrentUser(null); setIsSidebarOpen(false); }}}))} className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-bold text-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"><LogOut size={18}/> Keluar Aplikasi</button>
+                            </div>
+                        </form>
+                    </Modal>
+                    
+                    <Modal isOpen={!!selectedLocation} title={`Detail: ${selectedLocation?.code}`} onClose={()=>setSelectedLocation(null)} type="info">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl">
+                                <div className="p-3 bg-white rounded-xl shadow-sm text-blue-600"><Warehouse size={24}/></div>
+                                <div><h5 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{selectedLocation?.name}</h5><p className="text-xs text-slate-400 mt-0.5">Kode Area: {selectedLocation?.code}</p></div>
+                            </div>
+                            <h6 className="text-xs font-bold text-slate-400 uppercase ml-1">Daftar Barang</h6>
+                            <div className="max-h-60 overflow-y-auto custom-scrollbar border rounded-2xl border-slate-100">
+                                {inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2"><Box size={24} className="opacity-20"/><p className="text-xs font-medium">Rak Kosong</p></div> : inventory.filter(i=>i.location===selectedLocation?.code).map(i=>(
+                                    <div key={i.id} className="p-4 border-b border-slate-50 flex justify-between items-center last:border-0 bg-white hover:bg-slate-50">
+                                        <div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono bg-slate-100 inline-block px-1.5 rounded mt-1">{i.sku}</p></div>
+                                        <span className="font-extrabold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-xs shadow-sm">{formatNumber(i.qty)} Unit</span>
                                     </div>
+                                ))}
+                            </div>
+                        </div>
+                    </Modal>
+
+                    <Modal isOpen={!!moveItem} title="Transfer Stok" onClose={()=>setMoveItem(null)}>
+                        {moveItem && (
+                            <form onSubmit={handleMoveItemSubmit} className="space-y-5">
+                                <div className="bg-gradient-to-r from-slate-800 to-slate-700 p-5 rounded-2xl shadow-lg text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10"><Box size={64}/></div>
+                                    <p className="text-xs text-slate-300 uppercase font-bold mb-1 tracking-wider">Barang yang dipindah</p>
+                                    <p className="font-bold text-lg">{moveItem.name}</p>
+                                    <p className="text-xs text-slate-300 font-mono mt-1">{moveItem.sku}</p>
                                 </div>
                                 
                                 <div>
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Pilih Lokasi Awal (Sumber)</label>
-                                    <select required className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none font-bold" value={moveSourceId} onChange={e=>{ setMoveSourceId(e.target.value); setMoveQty(''); }}>
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Dari Lokasi</label>
+                                    <select required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold bg-white" value={moveSourceId} onChange={e=>{ setMoveSourceId(e.target.value); setMoveQty(''); }}>
                                         <option value="">-- Pilih Sumber --</option>
                                         {availableSources.map(s => (
-                                            <option key={s.id} value={s.id}>{s.location} (Sisa: {formatNumber(s.qty)})</option>
+                                            <option key={s.id} value={s.id}>{s.location} (Tersedia: {formatNumber(s.qty)})</option>
                                         ))}
                                     </select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Ke Lokasi</label>
-                                        <select required className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:border-blue-500 outline-none font-bold" value={moveTargetLocation} onChange={e=>setMoveTargetLocation(e.target.value)}>
+                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Ke Lokasi</label>
+                                        <select required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold bg-white" value={moveTargetLocation} onChange={e=>setMoveTargetLocation(e.target.value)}>
                                             <option value="">-- Pilih --</option>
-                                            {locations.filter(l => l.code !== selectedSourceItem?.location).map(l => (
+                                            {locations.filter(l => l.code !== selectedSourceItem?.location && l.code !== 'RETUR').map(l => (
                                                 <option key={l.id} value={l.code}>{l.code}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Jumlah</label>
-                                        <input 
-                                            type="number" 
-                                            min="1" 
-                                            max={selectedSourceItem?.qty} 
-                                            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm text-center font-bold focus:border-blue-500 outline-none" 
-                                            placeholder="0" 
-                                            value={moveQty} 
-                                            onChange={e=>setMoveQty(e.target.value)} 
-                                            disabled={!selectedSourceItem}
-                                        />
-                                        <p className="text-[9px] text-slate-400 text-right mt-1">
-                                            {selectedSourceItem ? `Max: ${formatNumber(selectedSourceItem.qty)}` : '-'}
-                                        </p>
+                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Jumlah</label>
+                                        <input type="number" min="1" max={selectedSourceItem?.qty} className="input-field w-full p-4 rounded-2xl text-sm text-center font-bold border border-slate-200" placeholder="0" value={moveQty} onChange={e=>setMoveQty(e.target.value)} disabled={!selectedSourceItem}/>
+                                        <p className="text-[9px] text-slate-400 text-right mt-1.5 font-medium">{selectedSourceItem ? `Max: ${formatNumber(selectedSourceItem.qty)}` : '-'}</p>
                                     </div>
                                 </div>
 
-                                <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                                    <ArrowRightLeft size={18}/> Proses Pindah
+                                <button className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform hover:bg-slate-700">
+                                    <ArrowRightLeft size={18}/> Konfirmasi Pindah
                                 </button>
                             </form>
                         )}

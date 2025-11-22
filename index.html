@@ -4,8 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#2563eb">
+    
+    <!-- PWA Settings for Mobile App Experience -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SNM Stock">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Data URI Manifest untuk Fullscreen PWA (Tanpa perlu file manifest.json terpisah) -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"SNM Stock WMS","short_name":"SNM Stock","start_url":".","display":"standalone","background_color":"#f8fafc","theme_color":"#2563eb","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1041/1041883.png","sizes":"192x192","type":"image/png"}]}'>
+    
     <title>SNM-Stock - Cloud WMS</title>
     
     <!-- Tailwind CSS -->
@@ -50,7 +58,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f8fafc;
             -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
+            overscroll-behavior-y: none; /* Mencegah pull-to-refresh yang tidak diinginkan */
         }
         
         .glass-header {
@@ -264,6 +272,30 @@
                 return Object.values(groups);
             }, [inventory]);
 
+            // --- HISTORY HANDLING FOR MOBILE BACK BUTTON ---
+            useEffect(() => {
+                // Saat pertama load, ganti state awal dengan dashboard agar tidak kosong
+                window.history.replaceState({ tab: 'dashboard' }, '', '#dashboard');
+
+                const handlePopState = (event) => {
+                    // Jika tombol kembali ditekan
+                    if (event.state && event.state.tab) {
+                        // Jika state ada (berarti navigasi dalam app), pindah tab
+                        setActiveTab(event.state.tab);
+                        // Tutup sidebar atau scanner jika terbuka
+                        setIsSidebarOpen(false);
+                        setIsScanning(false);
+                        setScanResult(null);
+                    } else {
+                        // Fallback jika tidak ada state (misal keluar app)
+                        setActiveTab('dashboard');
+                    }
+                };
+
+                window.addEventListener('popstate', handlePopState);
+                return () => window.removeEventListener('popstate', handlePopState);
+            }, []);
+
             useEffect(() => {
                 let isMounted = true;
                 const initAuth = async () => {
@@ -322,6 +354,9 @@
 
             const navigateTo = (tab) => {
                 if (tab !== activeTab) {
+                    // PUSH STATE ke history browser agar tombol back bekerja
+                    window.history.pushState({ tab: tab }, '', `#${tab}`);
+                    
                     setActiveTab(tab);
                     setIsSidebarOpen(false);
                     if (isScanning) stopScanner();

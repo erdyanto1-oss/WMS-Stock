@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
     <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1KS7axzFBOhVQLFypkDqLkLP71iNu8x9X">
 
-    <title>SNM-Stock - Cloud WMS</title>
+    <title>SNM-Stock - Cloud WMS (Fixed)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -186,7 +186,7 @@
           Box, ArrowRight, Activity, BarChart3, Cloud, Smartphone, Loader2,
           Home, History, Camera, ChevronLeft, User, ShieldCheck, RefreshCw,
           Calendar, FileSpreadsheet, Filter, Download, Archive, ClipboardList, Save,
-          ArrowRightLeft, Layers, Database, Clipboard, Check, RotateCcw, Zap
+          ArrowRightLeft, Layers, Database, Clipboard, Check, RotateCcw, Zap, Hammer
         } from 'https://esm.sh/lucide-react@0.292.0';
 
         // ==========================================
@@ -223,17 +223,27 @@
         };
 
         const formatNumber = (num) => {
-            if (num === null || num === undefined) return '0';
+            if (num === null || num === undefined || isNaN(num)) return '0';
             return new Intl.NumberFormat('id-ID').format(num);
         };
 
+        // CUSTOM HOOK: Firestore Collection dengan Safety Check
         const useFirestoreCollection = (collectionName, firebaseUser, isAuthReady, onPermissionError) => {
             const [data, setData] = useState([]);
             const [loading, setLoading] = useState(true);
+            
             useEffect(() => {
-                if (!firebaseUser || !isAuthReady) return;
+                // Reset state jika user logout
+                if (!firebaseUser) {
+                    setData([]);
+                    return;
+                }
+                
+                if (!isAuthReady) return;
+
                 const path = COLLECTION_PATH(collectionName);
                 let unsubscribe;
+                
                 try {
                     unsubscribe = db.collection(path)
                         .onSnapshot(snapshot => {
@@ -253,6 +263,7 @@
                 }
                 return () => unsubscribe && unsubscribe();
             }, [firebaseUser, collectionName, isAuthReady]);
+            
             return { data, loading };
         };
 
@@ -433,10 +444,19 @@
                 return () => window.removeEventListener('popstate', handlePopState);
             }, []);
 
+            // AUTH INITIALIZATION
             useEffect(() => {
                 let isMounted = true;
                 const initAuth = async () => {
                     try {
+                        // Enable offline persistence if possible
+                        try {
+                            await db.enablePersistence();
+                        } catch(err) {
+                            // Persistence might fail if multiple tabs open
+                            console.log("Persistence not enabled:", err.code);
+                        }
+
                         await auth.signInAnonymously();
                         if(isMounted) {
                             setFirebaseUser(auth.currentUser);
@@ -445,7 +465,10 @@
                             if (savedUser) setCurrentUser(JSON.parse(savedUser));
                         }
                     } catch (error) {
-                        setModals(p => ({...p, alert: {isOpen: true, title: "Auth Error", message: "Gagal koneksi database.", type: "danger"}}));
+                        console.error("Auth error", error);
+                        if(isMounted) {
+                            setModals(p => ({...p, alert: {isOpen: true, title: "Auth Error", message: "Gagal koneksi database. Cek internet Anda.", type: "danger"}}));
+                        }
                     }
                 };
                 initAuth();
@@ -500,6 +523,7 @@
                     setIsSidebarOpen(false);
                     // Reset lock state when navigating manually
                     setIsLocationLocked(false);
+                    // Safe stop scanner if moving away
                     if (isScanning) stopScanner();
                 }
             };
@@ -515,42 +539,70 @@
             const stopScanner = async () => { setIsScanning(false); };
             const startScanner = async () => { 
                 setScannerLoading(true);
+                // Artificial delay to allow UI to settle
                 setTimeout(() => {
                     setIsScanning(true);
                     setScannerLoading(false);
                 }, 300);
             };
 
+            // OPTIMIZED SCANNER LOGIC (Prevents Crashing)
             useEffect(() => {
                 let html5QrCode;
+                let isMounted = true; // Flag to check if component is still mounted
+
                 if (isScanning) {
                     const init = async () => {
-                        await new Promise(r => setTimeout(r, 500));
+                        await new Promise(r => setTimeout(r, 500)); // Wait for DOM
+                        if (!isMounted) return;
                         if (!document.getElementById("reader")) { setIsScanning(false); return; }
+                        
                         try {
                             html5QrCode = new Html5Qrcode("reader");
                             html5QrCodeRef.current = html5QrCode;
-                            await html5QrCode.start(
-                                { facingMode: "environment" }, 
-                                { fps: 10, qrbox: { width: 250, height: 250 } }, 
-                                (decodedText) => { setScanQuery(decodedText); stopScanner(); handleScanLogic(decodedText); },
-                                (errorMessage) => { }
-                            );
+                            
+                            if(isMounted) {
+                                await html5QrCode.start(
+                                    { facingMode: "environment" }, 
+                                    { fps: 10, qrbox: { width: 250, height: 250 } }, 
+                                    (decodedText) => { 
+                                        if(isMounted) {
+                                            setScanQuery(decodedText); 
+                                            setIsScanning(false); // Stop scanning state first
+                                            handleScanLogic(decodedText); 
+                                        }
+                                    },
+                                    (errorMessage) => { 
+                                        // Ignore standard scanning errors
+                                    }
+                                );
+                            }
                         } catch (err) {
                             console.error("Camera error:", err);
-                            setIsScanning(false);
-                            showAlert("Gagal membuka kamera. Pastikan izin diberikan.", "Error Kamera", "danger");
+                            if(isMounted) {
+                                setIsScanning(false);
+                                showAlert("Gagal membuka kamera. Pastikan izin diberikan.", "Error Kamera", "danger");
+                            }
                         }
                     };
                     init();
                 }
+
+                // Cleanup function
                 return () => {
+                    isMounted = false;
                     if (html5QrCodeRef.current) {
                         try {
                             if (html5QrCodeRef.current.isScanning) {
-                                html5QrCodeRef.current.stop().then(() => { html5QrCodeRef.current.clear(); }).catch(err => console.warn("Scanner stop failed", err));
+                                html5QrCodeRef.current.stop().then(() => {
+                                    html5QrCodeRef.current.clear();
+                                }).catch(err => console.warn("Scanner stop warning", err));
+                            } else {
+                                html5QrCodeRef.current.clear();
                             }
-                        } catch (e) { }
+                        } catch (e) { 
+                            console.warn("Scanner cleanup error", e);
+                        }
                     }
                 };
             }, [isScanning]);
@@ -559,8 +611,6 @@
                 const q = query.toUpperCase().trim();
                 
                 // 1. PRIORITASKAN EXACT MATCH (SKU/BARCODE)
-                // Ini memperbaiki bug dimana pencarian "HS" juga mengambil "GFHS" (karena mengandung "HS")
-                // dan menyebabkan perhitungan total menjadi salah.
                 let matchingItems = inventory.filter(i => i.sku === q || i.barcode === q);
 
                 // 2. Jika TIDAK ADA exact match, baru cari partial name (opsional)
@@ -569,18 +619,22 @@
                 }
                 
                 if(matchingItems.length > 0) { 
-                    // Jika ada multiple produk berbeda (karena partial name match), kita harus hati-hati.
-                    // Tapi dengan prioritas Exact Match di atas, kasus "HS" vs "GFHS" sudah aman.
-                    
-                    // Kita ambil SKU dari item pertama yang cocok untuk grouping
                     const primarySku = matchingItems[0].sku;
-                    
-                    // Filter ulang agar HANYA menghitung stok dari SKU yang sama.
-                    // Ini mencegah bug penjumlahan massal jika partial name match mengenai banyak produk beda.
                     const specificSkuItems = matchingItems.filter(i => i.sku === primarySku);
 
                     const totalQty = specificSkuItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
-                    const locationsList = specificSkuItems.map(item => ({ location: item.location, qty: item.qty }));
+                    
+                    // AGGREGATE LOCATIONS (FIX VISUAL SPLIT)
+                    const locationMap = {};
+                    specificSkuItems.forEach(item => {
+                        if (locationMap[item.location]) {
+                            locationMap[item.location] += (parseInt(item.qty) || 0);
+                        } else {
+                            locationMap[item.location] = (parseInt(item.qty) || 0);
+                        }
+                    });
+
+                    const locationsList = Object.entries(locationMap).map(([loc, qty]) => ({ location: loc, qty: qty }));
                     
                     setScanResult({ type: 'item', data: { name: specificSkuItems[0].name, sku: specificSkuItems[0].sku, totalQty: totalQty, locations: locationsList } }); 
                 } else {
@@ -759,36 +813,138 @@
 
             const handleTransaction = async (type) => {
                 if(!transaction.itemId || transaction.qty<=0) return showAlert("Data tidak valid", "Error", "warning");
-                const itemRef = db.collection(COLLECTION_PATH('inventory')).doc(transaction.itemId);
+                
                 const currentItem = inventory.find(i => i.id === transaction.itemId);
-                const qtyInt = parseInt(transaction.qty);
-                if (type === 'out' && currentItem) { if (qtyInt > currentItem.qty) { return showAlert(`Stok tidak cukup! Maksimal keluar: ${currentItem.qty}`, "Stok Kurang", "danger"); } }
+                if (!currentItem) return showAlert("Barang tidak ditemukan (Refresh halaman)", "Error", "danger");
+                
+                const qtyInt = parseInt(transaction.qty) || 0;
+                
+                // OUTBOUND CHECK (UPDATED LOGIC FOR MULTI-DOC)
+                if (type === 'out') { 
+                    // Calculate Total Available in Target Location for this SKU
+                    const relevantItems = inventory.filter(i => i.sku === currentItem.sku && i.location === transaction.targetLocation);
+                    const totalAvailable = relevantItems.reduce((sum, i) => sum + (parseInt(i.qty)||0), 0);
+
+                    if (qtyInt > totalAvailable) { return showAlert(`Stok tidak cukup! Maksimal keluar: ${totalAvailable}`, "Stok Kurang", "danger"); } 
+                }
+
                 try {
                     await db.runTransaction(async (t) => {
-                        const doc = await t.get(itemRef);
-                        if (!doc.exists) throw "Barang tidak ditemukan!";
-                        const data = doc.data();
-                        let newQty = data.qty || 0;
-                        let newLoc = data.location;
-                        if (type === 'out') {
-                            if (newQty < qtyInt) throw "Stok tidak mencukupi!";
-                            newQty -= qtyInt;
-                        } else {
-                            newQty += qtyInt;
-                            if (transaction.targetLocation) newLoc = transaction.targetLocation;
+                        // 1. LOGIKA INBOUND (MASUK)
+                        if (type === 'in') {
+                             const existingItemAtTarget = inventory.find(i => i.sku === currentItem.sku && i.location === transaction.targetLocation);
+                             if (existingItemAtTarget) {
+                                const targetRef = db.collection(COLLECTION_PATH('inventory')).doc(existingItemAtTarget.id);
+                                t.update(targetRef, { qty: existingItemAtTarget.qty + qtyInt });
+                             } else {
+                                const newItemRef = db.collection(COLLECTION_PATH('inventory')).doc();
+                                t.set(newItemRef, {
+                                    name: currentItem.name,
+                                    sku: currentItem.sku,
+                                    barcode: currentItem.barcode || '',
+                                    location: transaction.targetLocation,
+                                    qty: qtyInt,
+                                    createdAt: Date.now()
+                                });
+                             }
+                        } 
+                        // 2. LOGIKA OUTBOUND (KELUAR) - MULTI DOC SUPPORT
+                        else {
+                            // Find ALL items in the target location with matching SKU
+                            const sourceItemsSnapshot = await db.collection(COLLECTION_PATH('inventory'))
+                                .where('sku', '==', currentItem.sku)
+                                .where('location', '==', transaction.targetLocation)
+                                .get();
+
+                            let remainingQtyToDeduct = qtyInt;
+                            
+                            // Sort docs by qty descending (optional, but good for reducing fragmentation) or created time
+                            // Here we just iterate
+                            sourceItemsSnapshot.docs.forEach((doc) => {
+                                if (remainingQtyToDeduct <= 0) return;
+
+                                const data = doc.data();
+                                const currentDocQty = parseInt(data.qty) || 0;
+
+                                if (currentDocQty > 0) {
+                                    const deduction = Math.min(currentDocQty, remainingQtyToDeduct);
+                                    const newQty = currentDocQty - deduction;
+                                    
+                                    if (newQty === 0) {
+                                        // If 0, delete the doc to clean up
+                                        t.delete(doc.ref);
+                                    } else {
+                                        t.update(doc.ref, { qty: newQty });
+                                    }
+                                    
+                                    remainingQtyToDeduct -= deduction;
+                                }
+                            });
+
+                            if (remainingQtyToDeduct > 0) {
+                                throw "Stok total di database tidak sinkron / kurang saat transaksi berjalan.";
+                            }
                         }
-                        t.update(itemRef, { qty: newQty, location: newLoc });
                     });
-                    const item = inventory.find(i => i.id === transaction.itemId);
+
                     await db.collection(COLLECTION_PATH('logs')).add({
-                        type, itemName: item?.name || 'Unknown', sku: item?.sku || 'Unknown', qty: qtyInt,
+                        type, itemName: currentItem.name, sku: currentItem.sku, qty: qtyInt,
                         date: getFormattedDate(Date.now()), user: currentUser.name, 
-                        notes: type==='in'? `${transaction.notes} -> ${transaction.targetLocation || item?.location}` : transaction.notes,
+                        notes: type==='in'? `${transaction.notes} -> ${transaction.targetLocation}` : transaction.notes,
                         timestamp: Date.now()
                     });
                     setTransaction({itemId:'', qty:'', notes:'', targetLocation:''});
                     showAlert(`Stok berhasil di${type==='in'?'tambah':'kurangi'}`, "Transaksi Sukses", "success");
                 } catch(err) { showAlert(typeof err === 'string' ? err : err.message, "Gagal", "danger"); }
+            };
+            
+            // ==========================================
+            // AUTO-FIX DUPLICATE STOCKS
+            // ==========================================
+            const fixDuplicateStocks = async () => {
+                const groups = {};
+                let duplicateFound = false;
+                
+                // Group by SKU + Location
+                inventory.forEach(item => {
+                    const key = `${item.sku}_${item.location}`;
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(item);
+                });
+                
+                const batch = db.batch();
+                let fixCount = 0;
+                
+                Object.values(groups).forEach(group => {
+                    if (group.length > 1) {
+                        duplicateFound = true;
+                        const masterItem = group[0];
+                        let totalQty = 0;
+                        group.forEach(item => { totalQty += (parseInt(item.qty) || 0); });
+                        
+                        // Update Master
+                        const masterRef = db.collection(COLLECTION_PATH('inventory')).doc(masterItem.id);
+                        batch.update(masterRef, { qty: totalQty });
+                        
+                        // Delete Others
+                        for (let i = 1; i < group.length; i++) {
+                             const dupRef = db.collection(COLLECTION_PATH('inventory')).doc(group[i].id);
+                             batch.delete(dupRef);
+                        }
+                        fixCount++;
+                    }
+                });
+                
+                if (duplicateFound) {
+                    try {
+                        await batch.commit();
+                        showAlert(`Berhasil menggabungkan ${fixCount} data stok ganda.`, "Perbaikan Sukses", "success");
+                    } catch (e) {
+                        showAlert("Gagal memperbaiki data: " + e.message, "Error", "danger");
+                    }
+                } else {
+                    showAlert("Data sudah bersih. Tidak ada stok ganda ditemukan.", "Info Aman", "success");
+                }
             };
 
             const openMoveModal = (item) => { setMoveItem(item); setMoveSourceId(''); setMoveTargetLocation(''); setMoveQty(''); };
@@ -799,7 +955,7 @@
                 const sourceItem = inventory.find(i => i.id === moveSourceId);
                 if(!sourceItem) return showAlert("Data asal tidak ditemukan", "Error", "danger");
                 if (sourceItem.location === moveTargetLocation) return showAlert("Lokasi tujuan sama dengan lokasi asal", "Info", "info");
-                const qtyToMove = parseInt(moveQty);
+                const qtyToMove = parseInt(moveQty) || 0;
                 if(qtyToMove <= 0 || qtyToMove > sourceItem.qty) return showAlert("Jumlah tidak valid atau melebihi stok", "Error", "warning");
                 try {
                     await db.runTransaction(async (t) => {
@@ -912,7 +1068,7 @@
                                 </button>
                             </form>
                         </div>
-                        <p className="text-white/40 text-xs font-medium mt-8 text-center">© 2024 SNM Stock System • v2.0 Cloud</p>
+                        <p className="text-white/40 text-xs font-medium mt-8 text-center">© 2024 SNM Stock System • v2.1 Stable</p>
                     </div>
                 );
             }
@@ -926,10 +1082,23 @@
             const availableSources = moveItem ? inventory.filter(i => i.sku === moveItem.sku) : [];
             const selectedSourceItem = availableSources.find(i => i.id === moveSourceId);
             
+            // UPDATED: Fix Duplicate Search Entries
             const renderItemSearchInput = () => {
-                const filteredSearchItems = inventory.filter(i => i.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || i.sku.toLowerCase().includes(itemSearchTerm.toLowerCase()));
+                // UNIQUE FILTER LOGIC
+                const uniqueItems = [];
+                const seenSkus = new Set();
+
+                inventory.forEach(item => {
+                    const match = item.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+                                  item.sku.toLowerCase().includes(itemSearchTerm.toLowerCase());
+                    
+                    if (match && !seenSkus.has(item.sku)) {
+                        seenSkus.add(item.sku);
+                        uniqueItems.push(item);
+                    }
+                });
+
                 const handleSelectItem = (item) => {
-                    // Default to the clicked item's location/id, but keep lock state normal (false for manual)
                     setTransaction(prev => ({ ...prev, itemId: item.id, targetLocation: item.location }));
                     setItemSearchTerm(`${item.name} - ${item.sku}`); 
                     setShowItemDropdown(false);
@@ -940,7 +1109,7 @@
                         <input type="text" className="input-field w-full p-4 bg-white rounded-2xl border border-slate-200 outline-none text-sm font-bold" placeholder="Ketik SKU atau Nama..." value={itemSearchTerm} onChange={(e) => { setItemSearchTerm(e.target.value); setShowItemDropdown(true); if(e.target.value === '') setTransaction(prev => ({...prev, itemId: ''})); }} onFocus={() => setShowItemDropdown(true)} onBlur={() => setTimeout(() => setShowItemDropdown(false), 200)} />
                         {showItemDropdown && itemSearchTerm && (
                             <div className="absolute z-50 left-0 right-0 mt-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto custom-scrollbar">
-                                {filteredSearchItems.length === 0 ? <div className="p-4 text-xs text-slate-400 text-center font-medium">Barang tidak ditemukan</div> : filteredSearchItems.map(item => (
+                                {uniqueItems.length === 0 ? <div className="p-4 text-xs text-slate-400 text-center font-medium">Barang tidak ditemukan</div> : uniqueItems.map(item => (
                                     <div key={item.id} onClick={() => handleSelectItem(item)} className="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0 transition-colors">
                                         <div className="font-bold text-slate-700 text-sm">{item.name}</div>
                                         <div className="text-[10px] text-slate-400 font-mono mt-0.5 bg-slate-100 inline-block px-1.5 rounded">{item.sku}</div>
@@ -974,6 +1143,17 @@
                         )}
                     </div>
                 );
+            };
+
+            // Helper to get Total Qty for validation in UI
+            const getSelectedTotalQty = () => {
+                if (!transaction.itemId || !transaction.targetLocation) return 0;
+                const currentItem = inventory.find(i => i.id === transaction.itemId);
+                if (!currentItem) return 0;
+                
+                // Find ALL items with same SKU and Location
+                const relevantItems = inventory.filter(i => i.sku === currentItem.sku && i.location === transaction.targetLocation);
+                return relevantItems.reduce((sum, i) => sum + (parseInt(i.qty)||0), 0);
             };
 
             return (
@@ -1047,7 +1227,6 @@
                                                         if(locItems.length === 0) return null;
                                                         return (
                                                             <Card key={loc.id} className="relative overflow-hidden group">
-                                                                {/* BACKGROUND WAREHOUSE ICON REMOVED FOR CLARITY */}
                                                                 <div className="relative z-10">
                                                                     <div className="flex justify-between items-start mb-3">
                                                                         <div>
@@ -1271,9 +1450,16 @@
                                                                 </div>
                                                             </div>
                                                             
+                                                            {/* AGGREGATE LOCATIONS SEBELUM RENDER */}
                                                             <div className="flex flex-wrap gap-2 mb-6">
-                                                                {item.locations.map(loc => (
-                                                                    <span key={loc.id} className={`border px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm ${loc.code === 'RETUR' ? 'bg-red-50 text-red-700 border-red-100' : loc.code === 'PACKING' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-white text-slate-600 border-slate-100'}`}>
+                                                                {Object.values(item.locations.reduce((acc, loc) => {
+                                                                    if (!acc[loc.code]) {
+                                                                        acc[loc.code] = { ...loc, qty: 0 };
+                                                                    }
+                                                                    acc[loc.code].qty += (parseInt(loc.qty) || 0);
+                                                                    return acc;
+                                                                }, {})).map((loc, idx) => (
+                                                                    <span key={idx} className={`border px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm ${loc.code === 'RETUR' ? 'bg-red-50 text-red-700 border-red-100' : loc.code === 'PACKING' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-white text-slate-600 border-slate-100'}`}>
                                                                         <MapPin size={12} className={loc.code==='RETUR'?'text-red-500': loc.code==='PACKING'?'text-orange-500':'text-blue-500'}/> {loc.code}: {formatNumber(loc.qty)}
                                                                     </span>
                                                                 ))}
@@ -1424,7 +1610,7 @@
                                                         <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Jumlah</label>
                                                         <input 
                                                             type="number" min="1" 
-                                                            className={`input-field w-full p-4 rounded-2xl outline-none font-black text-2xl text-center border ${activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0) ? 'border-red-500 text-red-500 bg-red-50' : 'border-slate-200 text-slate-800'}`}
+                                                            className={`input-field w-full p-4 rounded-2xl outline-none font-black text-2xl text-center border ${activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > getSelectedTotalQty() ? 'border-red-500 text-red-500 bg-red-50' : 'border-slate-200 text-slate-800'}`}
                                                             value={transaction.qty} onChange={e=>setTransaction({...transaction, qty:e.target.value})} 
                                                         />
                                                     </div>
@@ -1443,7 +1629,7 @@
                                                                     <input disabled className="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
                                                                 ) : (
                                                                     // Unlocked: Render dropdown of available locations (Manual)
-                                                                    // UPDATE: Filter out PACKING from manual outbound selection as well
+                                                                    // UPDATE: MERGE DUPLICATE LOCATIONS VISUALLY
                                                                     <select 
                                                                         className="input-field w-full p-4 rounded-2xl border border-slate-200 outline-none text-sm font-bold bg-white appearance-none" 
                                                                         value={transaction.targetLocation} 
@@ -1451,9 +1637,13 @@
                                                                             const newLoc = e.target.value;
                                                                             const currentItem = inventory.find(i => i.id === transaction.itemId);
                                                                             if (currentItem) {
-                                                                                 const targetItem = inventory.find(i => i.sku === currentItem.sku && i.location === newLoc);
-                                                                                 if (targetItem) {
-                                                                                     setTransaction(prev => ({...prev, targetLocation: newLoc, itemId: targetItem.id}));
+                                                                                 // Logic to handle picking specific item ID if duplicate exists
+                                                                                 // We try to find the one with largest quantity to avoid "Out of stock" errors if possible
+                                                                                 const availableItems = inventory.filter(i => i.sku === currentItem.sku && i.location === newLoc);
+                                                                                 if (availableItems.length > 0) {
+                                                                                     // Pick the one with most stock to be safe
+                                                                                     const bestItem = availableItems.reduce((max, item) => (item.qty > max.qty ? item : max), availableItems[0]);
+                                                                                     setTransaction(prev => ({...prev, targetLocation: newLoc, itemId: bestItem.id}));
                                                                                  }
                                                                             }
                                                                         }}
@@ -1463,10 +1653,21 @@
                                                                             (() => {
                                                                                 const currentItem = inventory.find(i => i.id === transaction.itemId);
                                                                                 if (!currentItem) return <option value="">Pilih Barang Dulu</option>;
-                                                                                // Filter items where location is NOT 'PACKING'
-                                                                                const availableLocs = inventory.filter(i => i.sku === currentItem.sku && i.location !== 'PACKING');
-                                                                                return availableLocs.map(i => (
-                                                                                    <option key={i.id} value={i.location}>{i.location} (Sisa: {i.qty})</option>
+                                                                                
+                                                                                // FILTER & AGGREGATE LOCATIONS
+                                                                                const rawItems = inventory.filter(i => i.sku === currentItem.sku && i.location !== 'PACKING');
+                                                                                const aggregatedLocs = {};
+
+                                                                                rawItems.forEach(i => {
+                                                                                    if(aggregatedLocs[i.location]) {
+                                                                                        aggregatedLocs[i.location] += parseInt(i.qty);
+                                                                                    } else {
+                                                                                        aggregatedLocs[i.location] = parseInt(i.qty);
+                                                                                    }
+                                                                                });
+
+                                                                                return Object.entries(aggregatedLocs).map(([loc, totalQty]) => (
+                                                                                    <option key={loc} value={loc}>{loc} (Total: {totalQty})</option>
                                                                                 ));
                                                                             })()
                                                                         ) : (
@@ -1477,7 +1678,7 @@
                                                                 
                                                                 {activeTab === 'outbound' && transaction.itemId && (
                                                                     <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium">
-                                                                        Stok Max: <span className="text-slate-800 font-bold">{inventory.find(i=>i.id===transaction.itemId)?.qty || 0}</span>
+                                                                        Stok Total (Agregat): <span className="text-slate-800 font-bold">{formatNumber(getSelectedTotalQty())}</span>
                                                                     </p>
                                                                 )}
                                                             </div>
@@ -1488,7 +1689,7 @@
                                                     <label className="text-xs font-bold text-slate-400 uppercase mb-1.5 block ml-1">Catatan (Opsional)</label>
                                                     <input type="text" className="input-field w-full p-4 bg-white rounded-2xl border border-slate-200 outline-none text-sm font-medium" placeholder="Contoh: PO-001, Restock..." value={transaction.notes} onChange={e=>setTransaction({...transaction, notes:e.target.value})} />
                                                 </div>
-                                                <button onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} disabled={activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > (inventory.find(i=>i.id===transaction.itemId)?.qty || 0)} className={`w-full py-4 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30':'bg-orange-600 hover:bg-orange-500 shadow-orange-500/30'}`}>
+                                                <button onClick={()=>handleTransaction(activeTab==='inbound'?'in':'out')} disabled={activeTab === 'outbound' && transaction.itemId && parseInt(transaction.qty) > getSelectedTotalQty()} className={`w-full py-4 rounded-2xl text-white font-bold text-lg shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${activeTab==='inbound'?'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/30':'bg-orange-600 hover:bg-orange-500 shadow-orange-500/30'}`}>
                                                     SIMPAN TRANSAKSI
                                                 </button>
                                             </div>
@@ -1506,7 +1707,6 @@
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                             {locations.map(loc => (
                                                 <div key={loc.id} onClick={()=>{setSelectedLocation(loc)}} className={`p-6 rounded-3xl border shadow-card active:scale-95 transition-all cursor-pointer group relative overflow-hidden ${loc.code === 'RETUR' ? 'bg-red-50 border-red-100' : loc.code === 'PACKING' ? 'bg-orange-50 border-orange-100' : 'bg-white border-slate-100 hover:border-blue-200'}`}>
-                                                    {/* BACKGROUND ICON REMOVED HERE TOO */}
                                                     <div className="relative z-10">
                                                         <div className="flex justify-between items-start mb-3">
                                                             <div className={`p-3 rounded-2xl ${loc.code==='RETUR'?'bg-red-100 text-red-600': loc.code==='PACKING'?'bg-orange-100 text-orange-600' :'bg-blue-50 text-blue-600'}`}>
@@ -1667,6 +1867,13 @@
                                 <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Username Login</label><input required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold" value={profileData.username} onChange={e=>setProfileData({...profileData, username:e.target.value})}/></div>
                                 <div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-1 block">Password Baru</label><input required className="input-field w-full p-4 rounded-2xl border border-slate-200 text-sm font-bold" value={profileData.password} onChange={e=>setProfileData({...profileData, password:e.target.value})}/></div>
                             </div>
+                            
+                            <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-100">
+                                <h4 className="font-bold text-yellow-700 text-sm mb-2 flex items-center gap-2"><Hammer size={16}/> Maintenance Database</h4>
+                                <p className="text-xs text-yellow-600 mb-3">Jika stok terlihat ganda di lokasi yang sama, gunakan tombol ini untuk menggabungkannya.</p>
+                                <button type="button" onClick={() => showConfirm("Sistem akan memindai dan menggabungkan semua stok ganda. Lanjutkan?", fixDuplicateStocks)} className="w-full bg-yellow-500 text-white py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-yellow-500/20 hover:bg-yellow-600 active:scale-95 transition-all">Perbaiki Stok Ganda (Merge)</button>
+                            </div>
+
                             <div className="pt-4 flex flex-col gap-3">
                                 <button className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-transform">Simpan Perubahan</button>
                                 <button type="button" onClick={() => setModals(p => ({...p, profile: false, confirm: { isOpen: true, message: "Yakin ingin keluar?", onConfirm: () => { localStorage.removeItem('snm_active_user'); setCurrentUser(null); setIsSidebarOpen(false); }}}))} className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-bold text-sm border border-red-100 flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"><LogOut size={18}/> Keluar Aplikasi</button>
@@ -1682,12 +1889,26 @@
                             </div>
                             <h6 className="text-xs font-bold text-slate-400 uppercase ml-1">Daftar Barang</h6>
                             <div className="max-h-60 overflow-y-auto custom-scrollbar border rounded-2xl border-slate-100">
-                                {inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2"><Box size={24} className="opacity-20"/><p className="text-xs font-medium">Rak Kosong</p></div> : inventory.filter(i=>i.location===selectedLocation?.code).map(i=>(
-                                    <div key={i.id} className="p-4 border-b border-slate-50 flex justify-between items-center last:border-0 bg-white hover:bg-slate-50">
-                                        <div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono bg-slate-100 inline-block px-1.5 rounded mt-1">{i.sku}</p></div>
-                                        <span className="font-extrabold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-xs shadow-sm">{formatNumber(i.qty)} Unit</span>
-                                    </div>
-                                ))}
+                                {inventory.filter(i=>i.location===selectedLocation?.code).length === 0 ? <div className="p-8 text-center text-slate-400 flex flex-col items-center gap-2"><Box size={24} className="opacity-20"/><p className="text-xs font-medium">Rak Kosong</p></div> : 
+                                /* FIX: Aggregate items by SKU for Display */
+                                (() => {
+                                    const rawItems = inventory.filter(i=>i.location===selectedLocation?.code);
+                                    const aggregated = {};
+                                    rawItems.forEach(item => {
+                                        if (aggregated[item.sku]) {
+                                            aggregated[item.sku].qty += (parseInt(item.qty)||0);
+                                        } else {
+                                            aggregated[item.sku] = { ...item, qty: parseInt(item.qty)||0 };
+                                        }
+                                    });
+                                    
+                                    return Object.values(aggregated).map(i=>(
+                                        <div key={i.sku} className="p-4 border-b border-slate-50 flex justify-between items-center last:border-0 bg-white hover:bg-slate-50">
+                                            <div><p className="font-bold text-slate-700 text-sm">{i.name}</p><p className="text-[10px] text-slate-400 font-mono bg-slate-100 inline-block px-1.5 rounded mt-1">{i.sku}</p></div>
+                                            <span className="font-extrabold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-xs shadow-sm">{formatNumber(i.qty)} Unit</span>
+                                        </div>
+                                    ));
+                                })()}
                             </div>
                         </div>
                     </Modal>
@@ -1710,6 +1931,8 @@
                                             <option key={s.id} value={s.id}>{s.location} (Tersedia: {formatNumber(s.qty)})</option>
                                         ))}
                                     </select>
+                                    {/* Hint for split stocks */}
+                                    {availableSources.length > 1 && <p className="text-[10px] text-orange-500 mt-1 italic">* Ada {availableSources.length} batch stok untuk barang ini. Harap gunakan 'Perbaiki Stok Ganda' di menu Profil.</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

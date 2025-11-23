@@ -358,6 +358,9 @@
             const [moveSourceId, setMoveSourceId] = useState('');
             const [moveTargetLocation, setMoveTargetLocation] = useState('');
             const [moveQty, setMoveQty] = useState('');
+            
+            // New state to lock location selection when coming from scanner
+            const [isLocationLocked, setIsLocationLocked] = useState(false);
 
             const [filterType, setFilterType] = useState('daily');
             const [customDateStart, setCustomDateStart] = useState('');
@@ -414,7 +417,8 @@
                         setIsSidebarOpen(false);
                         setIsScanning(false);
                         setScanResult(null);
-                        setTransaction({ itemId: '', qty: '', notes: '', targetLocation: '' }); 
+                        setTransaction({ itemId: '', qty: '', notes: '', targetLocation: '' });
+                        setIsLocationLocked(false);
                     } else { setActiveTab('dashboard'); }
                 };
                 window.addEventListener('popstate', handlePopState);
@@ -442,7 +446,6 @@
 
             useEffect(() => {
                 if (authReady && firebaseUser && !loadingUsers) {
-                    // LOGIKA AUTO-CREATE ADMIN DIHAPUS ATAS PERMINTAAN USER
                     const ensureData = async () => {
                         try {
                             if (locations.length > 0 || !loadingLoc) { 
@@ -482,6 +485,8 @@
                     window.history.pushState({ tab: tab }, '', `#${tab}`);
                     setActiveTab(tab);
                     setIsSidebarOpen(false);
+                    // Reset lock state when navigating manually
+                    setIsLocationLocked(false);
                     if (isScanning) stopScanner();
                 }
             };
@@ -497,7 +502,6 @@
             const stopScanner = async () => { setIsScanning(false); };
             const startScanner = async () => { 
                 setScannerLoading(true);
-                // Small delay to prevent double click freeze
                 setTimeout(() => {
                     setIsScanning(true);
                     setScannerLoading(false);
@@ -556,6 +560,10 @@
             const handleScanAction = (targetTab) => {
                 if (!scanResult) return;
                 let newTrans = { itemId: '', qty: '', notes: '', targetLocation: '' };
+                
+                // When coming from scanner, we lock the location
+                setIsLocationLocked(true);
+
                 if (scanResult.type === 'item') {
                     const item = inventory.find(i => i.sku.toUpperCase() === scanResult.data.sku.toUpperCase());
                     if (item) { newTrans.itemId = item.id; newTrans.targetLocation = item.location; }
@@ -818,8 +826,10 @@
             const renderItemSearchInput = () => {
                 const filteredSearchItems = inventory.filter(i => i.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) || i.sku.toLowerCase().includes(itemSearchTerm.toLowerCase()));
                 const handleSelectItem = (item) => {
+                    // Default to the clicked item's location/id, but keep lock state normal (false for manual)
                     setTransaction(prev => ({ ...prev, itemId: item.id, targetLocation: item.location }));
-                    setItemSearchTerm(`${item.name} - ${item.sku}`); setShowItemDropdown(false);
+                    setItemSearchTerm(`${item.name} - ${item.sku}`); 
+                    setShowItemDropdown(false);
                 };
                 return (
                     <div className="relative">
@@ -873,7 +883,8 @@
                              <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">SNM<span className="text-blue-600">Cloud</span></h1>
                              <div className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold mt-2 uppercase tracking-wider border border-blue-100">Warehouse System</div>
                         </div>
-                        <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
+                        {/* UPDATE: Added pb-32 to fix bottom menu cutting off on mobile */}
+                        <nav className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar pb-32">
                             <SidebarLink tab="dashboard" icon={LayoutDashboard} label="Dashboard" />
                             <SidebarLink tab="inventory" icon={Box} label="Stok Barang Global" />
                             <SidebarLink tab="locations" icon={Warehouse} label="Lokasi & Rak" />
@@ -1291,8 +1302,45 @@
                                                                 {locations.filter(l => l.code !== 'RETUR').map(l=><option key={l.id} value={l.code}>{l.code}</option>)}
                                                             </select>
                                                         ) : (
+                                                            /* UPDATE: Logic for Outbound Location Selection */
                                                             <div>
-                                                                <input disabled className="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
+                                                                {isLocationLocked ? (
+                                                                    // Locked: Render disabled input (from Scanner)
+                                                                    <input disabled className="w-full p-4 bg-slate-100 text-slate-500 rounded-2xl border border-slate-200 font-bold text-center text-sm" value={transaction.targetLocation||'-'} />
+                                                                ) : (
+                                                                    // Unlocked: Render dropdown of available locations (Manual)
+                                                                    <select 
+                                                                        className="input-field w-full p-4 rounded-2xl border border-slate-200 outline-none text-sm font-bold bg-white appearance-none" 
+                                                                        value={transaction.targetLocation} 
+                                                                        onChange={(e) => {
+                                                                            const newLoc = e.target.value;
+                                                                            const currentItem = inventory.find(i => i.id === transaction.itemId);
+                                                                            if (currentItem) {
+                                                                                 // Find the specific item ID for the selected location
+                                                                                 const targetItem = inventory.find(i => i.sku === currentItem.sku && i.location === newLoc);
+                                                                                 if (targetItem) {
+                                                                                     setTransaction(prev => ({...prev, targetLocation: newLoc, itemId: targetItem.id}));
+                                                                                 }
+                                                                            }
+                                                                        }}
+                                                                        disabled={!transaction.itemId}
+                                                                    >
+                                                                        {transaction.itemId ? (
+                                                                            // Get current item SKU and find all locations
+                                                                            (() => {
+                                                                                const currentItem = inventory.find(i => i.id === transaction.itemId);
+                                                                                if (!currentItem) return <option value="">Pilih Barang Dulu</option>;
+                                                                                const availableLocs = inventory.filter(i => i.sku === currentItem.sku);
+                                                                                return availableLocs.map(i => (
+                                                                                    <option key={i.id} value={i.location}>{i.location} (Sisa: {i.qty})</option>
+                                                                                ));
+                                                                            })()
+                                                                        ) : (
+                                                                            <option value="">Pilih Barang Dulu</option>
+                                                                        )}
+                                                                    </select>
+                                                                )}
+                                                                
                                                                 {activeTab === 'outbound' && transaction.itemId && (
                                                                     <p className="text-[10px] text-slate-400 text-center mt-1.5 font-medium">
                                                                         Stok Max: <span className="text-slate-800 font-bold">{inventory.find(i=>i.id===transaction.itemId)?.qty || 0}</span>

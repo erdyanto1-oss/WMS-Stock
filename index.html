@@ -392,12 +392,20 @@
             
             const isAdmin = currentUser?.role === 'admin';
 
+            // UPDATED: Include single_qty and bundle_qty in grouped locations
             const groupedInventory = useMemo(() => {
                 const groups = {};
                 inventory.forEach(item => {
                     if (!groups[item.sku]) { groups[item.sku] = { ...item, totalQty: 0, locations: [] }; }
                     groups[item.sku].totalQty += (parseInt(item.qty) || 0);
-                    groups[item.sku].locations.push({ id: item.id, code: item.location, qty: item.qty });
+                    groups[item.sku].locations.push({ 
+                        id: item.id, 
+                        code: item.location, 
+                        qty: item.qty,
+                        // ADDED: Persist packing details
+                        single_qty: item.single_qty || 0,
+                        bundle_qty: item.bundle_qty || 0
+                    });
                 });
                 return Object.values(groups);
             }, [inventory]);
@@ -549,12 +557,32 @@
 
             const handleScanLogic = (query) => {
                 const q = query.toUpperCase().trim();
-                const matchingItems = inventory.filter(i => i.sku === q || i.barcode === q || i.name.toUpperCase().includes(q));
+                
+                // 1. PRIORITASKAN EXACT MATCH (SKU/BARCODE)
+                // Ini memperbaiki bug dimana pencarian "HS" juga mengambil "GFHS" (karena mengandung "HS")
+                // dan menyebabkan perhitungan total menjadi salah.
+                let matchingItems = inventory.filter(i => i.sku === q || i.barcode === q);
+
+                // 2. Jika TIDAK ADA exact match, baru cari partial name (opsional)
+                if (matchingItems.length === 0) {
+                    matchingItems = inventory.filter(i => i.name.toUpperCase().includes(q));
+                }
                 
                 if(matchingItems.length > 0) { 
-                    const totalQty = matchingItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
-                    const locationsList = matchingItems.map(item => ({ location: item.location, qty: item.qty }));
-                    setScanResult({ type: 'item', data: { name: matchingItems[0].name, sku: matchingItems[0].sku, totalQty: totalQty, locations: locationsList } }); 
+                    // Jika ada multiple produk berbeda (karena partial name match), kita harus hati-hati.
+                    // Tapi dengan prioritas Exact Match di atas, kasus "HS" vs "GFHS" sudah aman.
+                    
+                    // Kita ambil SKU dari item pertama yang cocok untuk grouping
+                    const primarySku = matchingItems[0].sku;
+                    
+                    // Filter ulang agar HANYA menghitung stok dari SKU yang sama.
+                    // Ini mencegah bug penjumlahan massal jika partial name match mengenai banyak produk beda.
+                    const specificSkuItems = matchingItems.filter(i => i.sku === primarySku);
+
+                    const totalQty = specificSkuItems.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
+                    const locationsList = specificSkuItems.map(item => ({ location: item.location, qty: item.qty }));
+                    
+                    setScanResult({ type: 'item', data: { name: specificSkuItems[0].name, sku: specificSkuItems[0].sku, totalQty: totalQty, locations: locationsList } }); 
                 } else {
                     const loc = locations.find(l => l.code === q);
                     if(loc) { setScanResult({type:'location', data:loc, items: inventory.filter(i=>i.location===loc.code)}); } 
@@ -589,8 +617,10 @@
             };
 
             const savePackingData = async () => {
-                const itemsToSave = Object.entries(packingInput).filter(([_, data]) => (data.single || 0) > 0 || (data.bundling || 0) > 0);
-                if (itemsToSave.length === 0) return showAlert("Belum ada data packing yang diisi.", "Info");
+                // Filter items that have ANY change in input
+                const itemsToSave = Object.entries(packingInput).filter(([_, data]) => (data.single !== undefined) || (data.bundling !== undefined));
+                
+                if (itemsToSave.length === 0) return showAlert("Belum ada perubahan data packing yang diisi.", "Info");
                 
                 try {
                     const batch = db.batch();
@@ -604,24 +634,32 @@
                         const itemMaster = inventory.find(i => i.sku === sku);
                         if (!itemMaster) return;
                         
-                        // Calculate Total Input for this SKU
-                        const totalNewQty = (data.single || 0) + (data.bundling || 0);
-
-                        // Find existing Item in PACKING location
+                        // Find existing Item in PACKING location to get previous values
                         const existingPackingItem = inventory.find(i => i.sku === sku && i.location === 'PACKING');
+                        
+                        // MERGE LOGIC: Use new input if exists, otherwise fallback to existing DB value
+                        const newSingleQty = data.single !== undefined ? data.single : (existingPackingItem?.single_qty || 0);
+                        const newBundleQty = data.bundling !== undefined ? data.bundling : (existingPackingItem?.bundle_qty || 0);
+
+                        // Calculate Total Input for this SKU
+                        const totalNewQty = newSingleQty + newBundleQty;
+
                         const currentPackingQty = existingPackingItem ? parseInt(existingPackingItem.qty) : 0;
 
                         // Calculate Diff
                         const diff = totalNewQty - currentPackingQty;
-
-                        if (diff === 0) return; // No change in total, skip
 
                         changeCount++;
 
                         // Update or Create Inventory in PACKING
                         if (existingPackingItem) {
                             const itemRef = db.collection(COLLECTION_PATH('inventory')).doc(existingPackingItem.id);
-                            batch.update(itemRef, { qty: totalNewQty });
+                            // UPDATED: Persist single_qty and bundle_qty fields
+                            batch.update(itemRef, { 
+                                qty: totalNewQty,
+                                single_qty: newSingleQty,
+                                bundle_qty: newBundleQty
+                            });
                         } else {
                             const newItemRef = db.collection(COLLECTION_PATH('inventory')).doc();
                             batch.set(newItemRef, {
@@ -630,28 +668,32 @@
                                 barcode: itemMaster.barcode || '', 
                                 location: 'PACKING', 
                                 qty: totalNewQty, 
+                                single_qty: newSingleQty, // Persist
+                                bundle_qty: newBundleQty, // Persist
                                 createdAt: timestamp
                             });
                         }
 
-                        // Create Transaction Log (IN or OUT depending on diff)
-                        const logRef = db.collection(COLLECTION_PATH('logs')).doc();
-                        batch.set(logRef, {
-                            type: diff > 0 ? 'in' : 'out', 
-                            itemName: itemMaster.name, 
-                            sku: itemMaster.sku, 
-                            qty: Math.abs(diff), 
-                            date: dateFormatted, 
-                            user: currentUser.name, 
-                            notes: diff > 0 ? 'Hasil Packing (Auto)' : 'Koreksi Packing (Auto)', 
-                            timestamp: timestamp
-                        });
+                        // Only log history if there is a change in quantity
+                        if (diff !== 0) {
+                            const logRef = db.collection(COLLECTION_PATH('logs')).doc();
+                            batch.set(logRef, {
+                                type: diff > 0 ? 'in' : 'out', 
+                                itemName: itemMaster.name, 
+                                sku: itemMaster.sku, 
+                                qty: Math.abs(diff), 
+                                date: dateFormatted, 
+                                user: currentUser.name, 
+                                notes: diff > 0 ? 'Hasil Packing (Auto)' : 'Koreksi Packing (Auto)', 
+                                timestamp: timestamp
+                            });
+                        }
                         
                         // Save Packing Log (History Report)
                          const packLogRef = db.collection(COLLECTION_PATH('packing_logs')).doc();
                          batch.set(packLogRef, {
                             date: today, itemId: itemMaster.id, itemName: itemMaster.name, sku: itemMaster.sku,
-                            single: data.single || 0, bundling: data.bundling || 0,
+                            single: newSingleQty, bundling: newBundleQty,
                             total: totalNewQty,
                             change: diff,
                             user: currentUser.name, timestamp: timestamp
@@ -659,12 +701,12 @@
                     });
                     
                     if (changeCount === 0) {
-                         return showAlert("Tidak ada perubahan jumlah stok packing.", "Info");
+                         return showAlert("Tidak ada data valid untuk disimpan.", "Info");
                     }
 
                     await batch.commit();
                     setPackingInput({});
-                    showAlert("Data Packing berhasil disimpan dan Stok PACKING telah diperbarui!", "Sukses", "success");
+                    showAlert("Data Packing berhasil disimpan. Stok & rincian (Single/Bundle) diperbarui!", "Sukses", "success");
                 } catch (error) { console.error(error); showAlert("Gagal menyimpan data: " + error.message, "Error", "danger"); }
             };
             
@@ -1085,13 +1127,20 @@
                                                 </div>
                                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[500px] overflow-y-auto custom-scrollbar p-1">
                                                     {groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map(item => {
-                                                        const inputData = packingInput[item.sku] || { single: '', bundling: '' };
-                                                        const total = (parseInt(inputData.single) || 0) + (parseInt(inputData.bundling) || 0);
+                                                        const inputData = packingInput[item.sku] || {};
                                                         
-                                                        // Find current stock in PACKING location
+                                                        // UPDATED: Determine value to display. Priority: User Typing -> DB Saved -> Empty
+                                                        // Find current stock in PACKING location for Fallback
                                                         const currentPackingItem = item.locations.find(l => l.code === 'PACKING');
+                                                        const savedSingle = currentPackingItem ? (currentPackingItem.single_qty || 0) : 0;
+                                                        const savedBundle = currentPackingItem ? (currentPackingItem.bundle_qty || 0) : 0;
                                                         const currentStock = currentPackingItem ? parseInt(currentPackingItem.qty) : 0;
                                                         
+                                                        const valSingle = inputData.single !== undefined ? inputData.single : (savedSingle > 0 ? savedSingle : '');
+                                                        const valBundle = inputData.bundling !== undefined ? inputData.bundling : (savedBundle > 0 ? savedBundle : '');
+                                                        
+                                                        const totalPreview = (parseInt(valSingle) || 0) + (parseInt(valBundle) || 0);
+
                                                         return (
                                                             <div key={item.sku} className="border border-slate-100 rounded-2xl p-4 hover:shadow-lg hover:border-blue-200 transition-all bg-white group">
                                                                 <div className="flex justify-between items-start mb-3">
@@ -1107,14 +1156,14 @@
                                                                 <div className="flex items-center gap-2">
                                                                     <div className="flex-1">
                                                                         <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 text-center">Single</label>
-                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100" placeholder="0" value={inputData.single} onChange={(e) => handlePackingInput(item.sku, 'single', e.target.value)}/>
+                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100" placeholder="0" value={valSingle} onChange={(e) => handlePackingInput(item.sku, 'single', e.target.value)}/>
                                                                     </div>
                                                                     <div className="flex-1">
                                                                         <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1 text-center">Bundle</label>
-                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100 focus:border-purple-500" placeholder="0" value={inputData.bundling} onChange={(e) => handlePackingInput(item.sku, 'bundling', e.target.value)}/>
+                                                                        <input type="number" min="0" className="input-field w-full p-2 rounded-xl text-sm text-center font-bold border border-slate-100 focus:border-purple-500" placeholder="0" value={valBundle} onChange={(e) => handlePackingInput(item.sku, 'bundling', e.target.value)}/>
                                                                     </div>
                                                                     <div className="w-14 flex flex-col items-center justify-center bg-slate-50 rounded-xl h-[38px] mt-5">
-                                                                        <span className={`text-[10px] font-bold ${total !== currentStock ? 'text-blue-600' : 'text-slate-600'}`}>{total}</span>
+                                                                        <span className={`text-[10px] font-bold ${totalPreview !== currentStock ? 'text-blue-600' : 'text-slate-600'}`}>{totalPreview}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1197,36 +1246,49 @@
                                         </div>
                                         <div className="grid gap-4 sm:grid-cols-2 pb-20">
                                             {loadingInv ? <div className="col-span-full text-center p-20"><Loader2 className="animate-spin inline text-blue-500 w-10 h-10"/></div> :
-                                            groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()) || i.sku.toLowerCase().includes(searchTerm.toLowerCase())).map(item => (
-                                                <Card key={item.sku} className="flex flex-col justify-between group hover:border-blue-200">
-                                                    <div>
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div>
-                                                                <div className="font-extrabold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{item.name}</div>
-                                                                <span className="text-xs font-mono bg-slate-50 px-2 py-1 rounded-lg text-slate-500 mt-2 inline-block border border-slate-100">{item.sku}</span>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className={`px-3 py-1.5 rounded-xl text-sm font-extrabold shadow-sm ${item.totalQty<10?'bg-red-50 text-red-600 border border-red-100':'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>{formatNumber(item.totalQty)} Unit</span>
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div className="flex flex-wrap gap-2 mb-6">
-                                                            {item.locations.map(loc => (
-                                                                <span key={loc.id} className={`border px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm ${loc.code === 'RETUR' ? 'bg-red-50 text-red-700 border-red-100' : loc.code === 'PACKING' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-white text-slate-600 border-slate-100'}`}>
-                                                                    <MapPin size={12} className={loc.code==='RETUR'?'text-red-500': loc.code==='PACKING'?'text-orange-500':'text-blue-500'}/> {loc.code}: {formatNumber(loc.qty)}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                            /* SMART FILTERING: Jika ada exact SKU match, tampilkan itu saja */
+                                            (() => {
+                                                // 1. Filter standar (partial match)
+                                                let displayItems = groupedInventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()) || i.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+                                                
+                                                // 2. Cek Exact Match
+                                                const exactMatch = displayItems.find(i => i.sku === searchTerm.toUpperCase());
+                                                if (exactMatch) {
+                                                    // Jika user mengetik SKU lengkap (misal "HS"), HANYA tampilkan HS, jangan GFHS.
+                                                    displayItems = [exactMatch];
+                                                }
 
-                                                    <div className="flex gap-3 border-t border-slate-50 pt-4 mt-auto">
-                                                        <button onClick={()=>openMoveModal(item)} className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-lg shadow-slate-500/20">
-                                                            <ArrowRightLeft size={14}/> Transfer Stok
-                                                        </button>
-                                                        {isAdmin && <button onClick={()=>deleteDoc('inventory', item.id, "Hapus barang ini?")} className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 active:scale-90 transition-colors"><Trash2 size={16}/></button>}
-                                                    </div>
-                                                </Card>
-                                            ))}
+                                                return displayItems.map(item => (
+                                                    <Card key={item.sku} className="flex flex-col justify-between group hover:border-blue-200">
+                                                        <div>
+                                                            <div className="flex justify-between items-start mb-4">
+                                                                <div>
+                                                                    <div className="font-extrabold text-slate-800 text-lg group-hover:text-blue-600 transition-colors">{item.name}</div>
+                                                                    <span className="text-xs font-mono bg-slate-50 px-2 py-1 rounded-lg text-slate-500 mt-2 inline-block border border-slate-100">{item.sku}</span>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <span className={`px-3 py-1.5 rounded-xl text-sm font-extrabold shadow-sm ${item.totalQty<10?'bg-red-50 text-red-600 border border-red-100':'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>{formatNumber(item.totalQty)} Unit</span>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div className="flex flex-wrap gap-2 mb-6">
+                                                                {item.locations.map(loc => (
+                                                                    <span key={loc.id} className={`border px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1.5 shadow-sm ${loc.code === 'RETUR' ? 'bg-red-50 text-red-700 border-red-100' : loc.code === 'PACKING' ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-white text-slate-600 border-slate-100'}`}>
+                                                                        <MapPin size={12} className={loc.code==='RETUR'?'text-red-500': loc.code==='PACKING'?'text-orange-500':'text-blue-500'}/> {loc.code}: {formatNumber(loc.qty)}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex gap-3 border-t border-slate-50 pt-4 mt-auto">
+                                                            <button onClick={()=>openMoveModal(item)} className="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-700 active:scale-95 transition-all shadow-lg shadow-slate-500/20">
+                                                                <ArrowRightLeft size={14}/> Transfer Stok
+                                                            </button>
+                                                            {isAdmin && <button onClick={()=>deleteDoc('inventory', item.id, "Hapus barang ini?")} className="w-10 flex items-center justify-center bg-red-50 text-red-500 rounded-xl hover:bg-red-100 active:scale-90 transition-colors"><Trash2 size={16}/></button>}
+                                                        </div>
+                                                    </Card>
+                                                ));
+                                            })()}
                                         </div>
                                     </div>
                                 )}

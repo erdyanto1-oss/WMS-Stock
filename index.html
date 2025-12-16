@@ -61,13 +61,22 @@
         #reader {
             position: relative;
             width: 100%;
-            border-radius: 8px;
+            height: 100%;
             overflow: hidden;
+            background-color: black;
         }
+        /* Memaksa video agar menutupi seluruh area (seperti background-size: cover) */
+        #reader video {
+            object-fit: cover;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 0 !important;
+        }
+        
         /* Hide html5-qrcode standard elements if needed or style them */
         #reader__dashboard_section_csr span { display: none; }
         
-        /* Laser Scanner Style */
+        /* Laser Scanner Style - Horizontal line moving down */
         .scanner-laser {
             position: absolute;
             top: 0;
@@ -98,7 +107,7 @@
             border-radius: 0.5rem;
             position: absolute; 
             top: 1.5rem; 
-            z-index: 60;
+            z-index: 60; /* Higher than laser */
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
@@ -314,7 +323,7 @@
             <!-- Panel Admin (Included in Scan View) -->
             <div id="adminPanel" class="space-y-4 pt-4 border-t border-slate-200 hidden">
                 <h2 class="text-lg font-semibold text-cyan-600 flex items-center gap-2">
-                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
                     Panel Admin: Daftarkan Pengguna Baru
                 </h2>
                 <div id="registerStatus" class="text-center p-3 rounded-lg text-sm font-medium transition-opacity duration-300 opacity-0"></div>
@@ -516,7 +525,7 @@
         let isScanCooldown = false; 
         let isPostSubmit = false; 
         let isScannerActiveBeforeModal = false;
-        let isScannerBusy = false;
+        let isScannerBusy = false; // NEW: Prevent race conditions
 
         // --- DOM Elements ---
         const loginContainer = document.getElementById('loginContainer');
@@ -900,9 +909,12 @@
             // CLEANUP PREVIOUS INSTANCE ROBUSTLY
             if (html5QrCode) {
                 try {
-                    if (html5QrCode.isScanning) {
-                        await html5QrCode.stop();
-                    }
+                    // Cek status scanning internal jika ada (tergantung versi library)
+                    // Panggil stop() dan tunggu
+                    await html5QrCode.stop().catch(err => {
+                        // Ignore error if stop fails (e.g. not scanning)
+                        console.log("Stop failed or not running:", err);
+                    });
                     html5QrCode.clear();
                 } catch (e) {
                     console.warn("Warning clearing previous instance:", e);
@@ -910,8 +922,9 @@
                 html5QrCode = null;
             }
             
-            // Add a small delay to allow OS to release camera handle
-            await new Promise(r => setTimeout(r, 300));
+            // Add a delay to allow OS to release camera handle completely
+            // Increased to 500ms to be safer against NotReadableError
+            await new Promise(r => setTimeout(r, 500));
 
             try {
                 html5QrCode = new Html5Qrcode("reader");
@@ -945,41 +958,37 @@
                 }
             };
 
-            // **** KONFIGURASI SCANNER FIXED UNTUK RESI ****
             const config = { 
                 fps: 20, 
-                // Gunakan fungsi untuk qrbox agar responsif sesuai lebar layar HP
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    // Gunakan 80% dari lebar layar agar barcode panjang masuk
-                    let minEdgePercentage = 0.8; 
+                    let minEdgePercentage = 0.75; 
                     let qrboxWidth = Math.floor(viewfinderWidth * minEdgePercentage);
-                    // Tinggi kotak lebih pendek (karena barcode resi itu wide/lebar)
-                    let qrboxHeight = Math.floor(qrboxWidth / 2.5); 
+                    let qrboxHeight = Math.floor(qrboxWidth * 0.8); 
                     return {
                         width: qrboxWidth,
                         height: qrboxHeight
                     };
                 },
-                // **** BATASI FORMAT SCANNER AGAR TIDAK SALAH BACA ****
                 formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.CODE_128, // Paling umum untuk resi
-                    Html5QrcodeSupportedFormats.QR_CODE   // Kadang ada resi QR
+                    Html5QrcodeSupportedFormats.CODE_128, 
+                    Html5QrcodeSupportedFormats.QR_CODE
                 ],
-                // Matikan fitur eksperimental browser detector karena kadang bug di Android
                 experimentalFeatures: {
                     useBarCodeDetectorIfSupported: false 
                 }
             };
             
-            // Fokus Continous untuk kamera HP
             const cameraConfig = { 
                 facingMode: "environment"
             };
 
-            html5QrCode.start(cameraConfig, config, qrCodeSuccessCallback)
-                .then(() => {
+            // Wrap start in a retry function
+            const attemptStart = async (retryCount = 0) => {
+                try {
+                    await html5QrCode.start(cameraConfig, config, qrCodeSuccessCallback);
+                    
+                    // Success block
                     try {
-                        // Cek kapabilitas flash
                         const track = html5QrCode.getRunningTrack();
                         if (track) {
                             const capabilities = track.getCapabilities();
@@ -997,104 +1006,58 @@
                     flashIconOn.classList.add('hidden');
                     flashIconOff.classList.remove('hidden');
                     isScannerBusy = false;
-                })
-                .catch(err => {
-                    console.error("Gagal memulai scanner", err);
-                    let errorMsg = "Tidak dapat mengakses kamera.";
+
+                } catch (err) {
+                    console.error(`Attempt ${retryCount + 1} failed:`, err);
                     
-                    // Safe access to error properties to prevent TypeError
                     const errName = err?.name || "Unknown";
                     const errMsg = err?.message || String(err);
+                    
+                    // Retry on NotReadableError (hardware busy)
+                    if ((errName === 'NotReadableError' || errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) && retryCount < 2) {
+                        console.log("Camera busy, retrying in 1s...");
+                        showStatus(`Kamera sibuk, mencoba lagi (${retryCount + 1}/3)...`, "loading");
+                        await new Promise(r => setTimeout(r, 1000));
+                        await attemptStart(retryCount + 1);
+                        return;
+                    }
 
-                    if (errName === 'NotReadableError' || errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) {
-                        errorMsg = "Kamera error: Restart HP atau Browser jika terus terjadi.";
+                    // Final Error Handling
+                    let errorMsg = "Tidak dapat mengakses kamera.";
+                    if (errName === 'NotReadableError' || errMsg.includes('NotReadableError')) {
+                        errorMsg = "Kamera tidak dapat diakses. Pastikan tidak ada aplikasi lain yang menggunakan kamera, lalu coba lagi.";
                     } else if (errName === 'NotAllowedError' || errMsg.includes('Permission')) {
-                        errorMsg = "Izin kamera ditolak.";
+                        errorMsg = "Izin kamera ditolak. Mohon izinkan akses kamera di pengaturan browser.";
                     }
                     
                     showStatus(errorMsg, "error");
                     isScannerBusy = false;
                     stopScanner();
-                });
-        }
-
-        function playBeep() {
-            if (!audioCtx) return; 
-            try {
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); 
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.1); 
-            } catch (e) {
-                console.error("Gagal memutar suara beep:", e);
-            }
-        }
-
-        function playErrorBeep() {
-            if ('speechSynthesis' in window) {
-                try {
-                    const utterance = new SpeechSynthesisUtterance('OJO MAS');
-                    utterance.lang = 'id-ID'; 
-                    utterance.rate = 0.95; 
-                    utterance.pitch = 0.9;  
-                    utterance.volume = 1.0; 
-                    window.speechSynthesis.speak(utterance);
-                } catch (e) {
-                    console.error("Gagal memutar suara 'OJO MAS':", e);
                 }
-            } else {
-                console.warn("Speech Synthesis tidak didukung browser ini.");
-                if (!audioCtx) return;
-                try {
-                    const oscillator = audioCtx.createOscillator();
-                    const gainNode = audioCtx.createGain();
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioCtx.destination);
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(160, audioCtx.currentTime);
-                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                    oscillator.start(audioCtx.currentTime);
-                    oscillator.stop(audioCtx.currentTime + 0.2);
-                } catch (e) {
-                    console.error("Gagal memutar suara error fallback:", e);
-                }
-            }
-        }
+            };
 
-        function showScanFeedback(message, type) {
-            if (feedbackTimer) {
-                clearTimeout(feedbackTimer); 
-            }
-            scanFeedbackEl.textContent = message;
-            scanFeedbackEl.className = '';
-            scanFeedbackEl.classList.add(type); 
-            feedbackTimer = setTimeout(() => {
-                scanFeedbackEl.className = ''; 
-            }, 2000); 
+            // Execute start
+            attemptStart();
         }
 
         async function stopScanner() {
-            if (isScannerBusy) return; // Tunggu jika sedang loading start
+            // Force clean up even if busy flag is stuck, but try to respect it if transient
+            // We'll remove the isScannerBusy check here to ensure user can force close if stuck
+            // if (isScannerBusy) return; 
             
             if (html5QrCode) {
-                isScannerBusy = true;
                 try {
                     if (isFlashOn) {
-                        await toggleFlash(true); 
+                        // Try to turn off flash, ignore errors
+                        await toggleFlash(true).catch(() => {}); 
                     }
-                    // Cek jika sedang scanning sebelum stop
-                    if (html5QrCode.isScanning) {
-                        await html5QrCode.stop();
-                        console.log("Scanner dihentikan.");
-                    }
+                    
+                    // Always try to stop if library thinks it's scanning
+                    // or just catch error if it wasn't
+                    await html5QrCode.stop().catch(e => console.log("Stop ignored:", e));
                     html5QrCode.clear();
                 } catch (err) {
-                    console.error("Gagal menghentikan scanner.", err);
+                    console.error("Gagal saat stop scanner:", err);
                 } finally {
                     html5QrCode = null;
                     isScannerBusy = false;
@@ -1923,6 +1886,76 @@
                 });
             }
             doc.save(`Handover_${hoNumber}.pdf`);
+        }
+        
+        function playBeep() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API tidak didukung.");
+                    return;
+                }
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            try {
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1); 
+            } catch (e) {
+                console.error("Gagal memutar suara beep:", e);
+            }
+        }
+
+        function playErrorBeep() {
+            if ('speechSynthesis' in window) {
+                try {
+                    const utterance = new SpeechSynthesisUtterance('OJO MAS');
+                    utterance.lang = 'id-ID'; 
+                    utterance.rate = 0.95; 
+                    utterance.pitch = 0.9;  
+                    utterance.volume = 1.0; 
+                    window.speechSynthesis.speak(utterance);
+                } catch (e) {
+                    console.error("Gagal memutar suara 'OJO MAS':", e);
+                }
+            } else {
+                console.warn("Speech Synthesis tidak didukung browser ini.");
+                if (!audioCtx) return;
+                try {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(160, audioCtx.currentTime);
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                } catch (e) {
+                    console.error("Gagal memutar suara error fallback:", e);
+                }
+            }
+        }
+
+        function showScanFeedback(message, type) {
+            if (feedbackTimer) {
+                clearTimeout(feedbackTimer); 
+            }
+            scanFeedbackEl.textContent = message;
+            scanFeedbackEl.className = '';
+            scanFeedbackEl.classList.add(type); 
+            feedbackTimer = setTimeout(() => {
+                scanFeedbackEl.className = ''; 
+            }, 2000); 
         }
         
         document.addEventListener('DOMContentLoaded', initializeApp);

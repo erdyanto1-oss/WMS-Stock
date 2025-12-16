@@ -323,7 +323,7 @@
             <!-- Panel Admin (Included in Scan View) -->
             <div id="adminPanel" class="space-y-4 pt-4 border-t border-slate-200 hidden">
                 <h2 class="text-lg font-semibold text-cyan-600 flex items-center gap-2">
-                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
                     Panel Admin: Daftarkan Pengguna Baru
                 </h2>
                 <div id="registerStatus" class="text-center p-3 rounded-lg text-sm font-medium transition-opacity duration-300 opacity-0"></div>
@@ -1288,7 +1288,7 @@
             resiCountEl.textContent = resiBatch.length;
         }
 
-        function resetBatch(fullReset = false) {
+        function resetBatch(fullReset = false, silent = false) {
             resiBatch = [];
             resiListEl.innerHTML = '';
             resiListEl.append(initialResiMessage);
@@ -1297,7 +1297,7 @@
             skuEl.value = ''; 
             ekspedisiEl.value = ''; 
             ekspedisiEl.focus(); 
-            if (fullReset) {
+            if (fullReset && !silent) {
                 showStatus("Batch dibersihkan seluruhnya.", "success");
             }
         }
@@ -1357,36 +1357,39 @@
                          addToScanResults(item.ekspedisi, item.resi, item.sku, pic, item.status);
                     });
 
+                    // 1. Show Duplicates Modal First (if any)
                     if (duplicates.length > 0) {
                         showServerDuplicateModal(duplicates);
                     }
                     
                     let statusMessage = `Selesai: ${processed.length} resi tersimpan, ${duplicates.length} duplikat.`;
-                    let statusType = duplicates.length > 0 ? "error" : "success";
+                    let statusType = duplicates.length > 0 ? "error" : "success"; // Keep error style for visibility if duplicates
 
-                    showStatus(statusMessage, statusType);
-                    
+                    // 2. Update Summary Card (Client side immediate update)
                     batchSummaryCard.classList.remove('hidden');
                     summaryBatchEl.textContent = processed.length;
                     
-                    resetBatch(true); 
+                    // 3. Reset Scan Batch (Silent, so it doesn't overwrite success status)
+                    resetBatch(true, true); 
 
-                    showStatus("Memvalidasi ulang status dari server...", "loading");
-                    logTableBodyEl.innerHTML = `<tr id="initial-log-message"><td colspan="5" class="text-center text-slate-400 italic py-4">Memuat ulang data...</td></tr>`;
-                    logCount = 0;
+                    // 4. SWITCH TAB IMMEDIATELY (This is the key fix)
+                    switchTab('hasil');
                     
+                    // 5. Show Status Message AFTER switching tab so user sees it on result screen
+                    showStatus(statusMessage, statusType);
+
+                    // 6. Refresh Data in Background (No await)
                     isPostSubmit = true; 
                     
-                    await fetchDailyScans();
+                    // Show a "refreshing" indication in the table
+                    logTableBodyEl.innerHTML = `<tr id="initial-log-message"><td colspan="5" class="text-center text-slate-400 italic py-4">Memuat ulang data terbaru...</td></tr>`;
                     
-                    isPostSubmit = false; 
-                    
-                    filterPicSelectEl.value = 'my-scan';
-                    applyFilters();
-                    showStatus(`Semua data berhasil divalidasi.`, "success");
-                    
-                    // --- AUTO SWITCH TO HASIL ---
-                    switchTab('hasil');
+                    // Fire and forget fetch
+                    fetchDailyScans().then(() => {
+                        isPostSubmit = false; 
+                        filterPicSelectEl.value = 'my-scan';
+                        applyFilters();
+                    }).catch(err => console.error("Background refresh error:", err));
 
                 } else {
                     throw new Error(result.message || "Gagal menyimpan data.");
@@ -1401,7 +1404,11 @@
         }
 
         async function fetchDailyScans() {
-            showStatus(`Memuat data scan hari ini untuk semua ekspedisi...`, "loading");
+            // Don't show global loading status if it's a background refresh
+            if (!isPostSubmit) {
+                showStatus(`Memuat data scan hari ini untuk semua ekspedisi...`, "loading");
+            }
+            
             refreshBtn.disabled = true;
             downloadPdfBtn.disabled = true;
             downloadPdfBtn.title = "Muat data dulu dengan tombol refresh";
@@ -1439,7 +1446,9 @@
                             if(item.pic) allPicNames.add(item.pic); 
                         });
                     }
-                    showStatus("Data berhasil dimuat!", "success");
+                    if (!isPostSubmit) {
+                        showStatus("Data berhasil dimuat!", "success");
+                    }
                     updatePicFilterOptions(); 
                     applyFilters();
                     downloadPdfBtn.disabled = false;
@@ -1449,7 +1458,9 @@
                 }
             } catch (error) {
                 console.error('Error fetching daily scans:', error);
-                showStatus(`Gagal memuat: ${error.message}`, "error");
+                if (!isPostSubmit) {
+                    showStatus(`Gagal memuat: ${error.message}`, "error");
+                }
                 logTableBodyEl.innerHTML = `<tr id="initial-log-message"><td colspan="5" class="text-center text-slate-400 italic py-4">Gagal memuat data. Coba lagi.</td></tr>`;
             } finally {
                 refreshBtn.disabled = false;

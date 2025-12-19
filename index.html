@@ -2,8 +2,11 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Input Resi | Login</title>
+    <!-- Viewport dioptimalkan untuk Aplikasi Mobile (No Zoom, Full Height) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <title>Dispatch Nashir Depok</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,15 +17,34 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- PWA Additions -->
-    <meta name="theme-color" content="#06b6d4">
+    <!-- PWA / Mobile App Capabilities -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Dispatch">
+    <meta name="theme-color" content="#06b6d4">
+    
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="https://placehold.co/192x192/06b6d4/ffffff?text=DND">
+    <link rel="icon" type="image/png" href="https://placehold.co/192x192/06b6d4/ffffff?text=DND">
+
+    <!-- Manifest JSON -->
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkRpc3BhdGNoIE5hc2hpciBEZXBvayIsCiAgInNob3J0X25hbWUiOiAiRGlzcGF0Y2giLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgInRoZW1lX2NvbG9yIjogIiMwNmI2ZDQiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL3BsYWNlaG9sZC5jby8xOTJ4MTkyLzA2YjZkNC9mZmZmZmY/dGV4dD1ETkQiLAogICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0sCiAgICB7CiAgICAgICInNyYyI6ICJodHRwczovL3BsYWNlaG9sZC5jby81MTJ4NTEyLzA2YjZkNC9mZmZmZmY/dGV4dD1ETkQiLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdCn0='>
     
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-user-select: none; 
+            user-select: none;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: none;
+        }
+        
+        input, textarea, select {
+            -webkit-user-select: auto;
+            user-select: auto;
+        }
+
         .log-item { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -57,26 +79,39 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Style for scanner */
+        /* --- STYLE SCANNER FULLSCREEN --- */
+        #scanner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 100; /* Paling atas */
+            display: flex;
+            flex-direction: column;
+        }
+
         #reader {
-            position: relative;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: black;
+            background: black;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
-        /* Memaksa video agar menutupi seluruh area (seperti background-size: cover) */
+
+        /* Memaksa video agar mengisi seluruh layar tanpa bar hitam */
         #reader video {
-            object-fit: cover;
             width: 100% !important;
             height: 100% !important;
-            border-radius: 0 !important;
+            object-fit: cover !important; /* Kunci agar tidak ada area hitam */
         }
         
-        /* Hide html5-qrcode standard elements if needed or style them */
         #reader__dashboard_section_csr span { display: none; }
         
-        /* Laser Scanner Style - Horizontal line moving down */
+        /* Laser Scanner Style */
         .scanner-laser {
             position: absolute;
             top: 0;
@@ -87,7 +122,7 @@
             box-shadow: 0 0 10px #EF4444, 0 0 5px #EF4444;
             opacity: 0.8;
             animation: scan-laser 2s infinite linear;
-            z-index: 20; 
+            z-index: 120; /* Di atas video */
             pointer-events: none;
         }
         @keyframes scan-laser {
@@ -106,31 +141,32 @@
             padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
             position: absolute; 
-            top: 1.5rem; 
-            z-index: 60; /* Higher than laser */
+            top: 4rem; /* Turun sedikit dari atas */
+            z-index: 130;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             text-align: center;
         }
-        #scan-feedback.success { background-color: #10B981; color: white; opacity: 1; top: 1.5rem; }
-        #scan-feedback.error { background-color: #EF4444; color: white; opacity: 1; top: 1.5rem; }
+        #scan-feedback.success { background-color: #10B981; color: white; opacity: 1; transform: translateX(-50%) translateY(0); }
+        #scan-feedback.error { background-color: #EF4444; color: white; opacity: 1; transform: translateX(-50%) translateY(0); }
 
         #flashBtn {
             position: absolute;
-            top: 1.5rem; 
-            left: 1.5rem; 
-            z-index: 60;
+            top: 2rem; 
+            right: 2rem; /* Pindah ke kanan atas */
+            z-index: 130;
             background-color: rgba(0, 0, 0, 0.5);
             color: white;
-            width: 44px; 
-            height: 44px; 
+            width: 48px; 
+            height: 48px; 
             border-radius: 9999px; 
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
             border: 1px solid rgba(255,255,255,0.3);
+            touch-action: manipulation;
         }
         #flashBtn:hover { background-color: rgba(0, 0, 0, 0.7); }
         #flashBtn.flash-on { background-color: #f59e0b; color: #78350f; border-color: #f59e0b; }
@@ -185,6 +221,7 @@
             color: #64748b; /* slate-500 */
             width: 50%;
             transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
         }
         .nav-item.active {
             color: #06b6d4; /* cyan-500 */
@@ -192,6 +229,14 @@
         }
         .nav-item svg {
             margin-bottom: 2px;
+        }
+        
+        /* Safe Area */
+        #bottomNav {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        #mainAppContainer {
+             padding-bottom: calc(4rem + env(safe-area-inset-bottom));
         }
     </style>
 </head>
@@ -323,7 +368,7 @@
             <!-- Panel Admin (Included in Scan View) -->
             <div id="adminPanel" class="space-y-4 pt-4 border-t border-slate-200 hidden">
                 <h2 class="text-lg font-semibold text-cyan-600 flex items-center gap-2">
-                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
+                    <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m-3.742 0l.001.03m-.001-.03l-.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03m0 0l.001.03M12 19.235M12 19.235M12 19.235M12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6zM12 6c0-1.108.892-2 2-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM12 6c0-1.108-.892-2-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V6z" /></svg>
                     Panel Admin: Daftarkan Pengguna Baru
                 </h2>
                 <div id="registerStatus" class="text-center p-3 rounded-lg text-sm font-medium transition-opacity duration-300 opacity-0"></div>
@@ -347,6 +392,14 @@
                         Daftarkan Pengguna
                     </button>
                 </form>
+                
+                <!-- Install App Button (Visible only if supported) -->
+                <button id="installAppBtn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 hidden mt-4 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                    Install Aplikasi
+                </button>
             </div>
         </div>
 
@@ -481,7 +534,7 @@
     </div>
 
     <!-- Scanner Modal (FULL SCREEN) -->
-    <div id="scanner-container" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-0">
+    <div id="scanner-container" class="fixed inset-0 bg-black hidden">
         <!-- Floating Controls -->
         <div id="scan-feedback" class=""></div>
         <button id="flashBtn" class="hidden" title="Toggle Flash">
@@ -494,7 +547,7 @@
         </button>
         
         <!-- Scanner Viewport -->
-        <div id="reader" class="w-full h-full bg-black">
+        <div id="reader">
              <div class="scanner-laser"></div>
         </div>
         
@@ -526,6 +579,8 @@
         let isPostSubmit = false; 
         let isScannerActiveBeforeModal = false;
         let isScannerBusy = false; // NEW: Prevent race conditions
+        let deferredPrompt; // PWA install prompt
+        let lastBackPressTime = 0; // Untuk double press exit
 
         // --- DOM Elements ---
         const loginContainer = document.getElementById('loginContainer');
@@ -585,6 +640,7 @@
         const flashBtn = document.getElementById('flashBtn'); 
         const flashIconOn = document.getElementById('flash-icon-on'); 
         const flashIconOff = document.getElementById('flash-icon-off'); 
+        const installAppBtn = document.getElementById('installAppBtn');
         
         // --- Navigation Elements ---
         const viewScan = document.getElementById('view-scan');
@@ -592,6 +648,73 @@
         const bottomNav = document.getElementById('bottomNav');
         const navScan = document.getElementById('nav-scan');
         const navHasil = document.getElementById('nav-hasil');
+
+        // --- PWA Installation Logic ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Tampilkan tombol install jika user belum menginstal
+            if (currentUser && currentUser.role === 'Admin') {
+                installAppBtn.classList.remove('hidden');
+            }
+        });
+        
+        installAppBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                installAppBtn.classList.add('hidden');
+            }
+        });
+
+        // --- Back Button Handling Logic ---
+        // Override default back behavior
+        window.addEventListener('popstate', handlePopState);
+
+        function handlePopState(event) {
+            // 1. Handle Overlays (Scanner/Modals)
+            const isScannerOpen = !scannerContainer.classList.contains('hidden');
+            const isModalOpen = !duplicateModal.classList.contains('hidden') || !serverDuplicateModal.classList.contains('hidden');
+
+            if (isScannerOpen) {
+                // Stop scanner, prevent exit
+                stopScanner();
+                history.pushState({ view: 'scan' }, '', ''); // Restore state to allow next back
+                return;
+            }
+
+            if (isModalOpen) {
+                hideDuplicateModal();
+                hideServerDuplicateModal();
+                history.pushState({ view: 'scan' }, '', ''); // Restore state
+                return;
+            }
+
+            // 2. Handle Tab Navigation (Hasil -> Scan)
+            if (!viewHasil.classList.contains('hidden')) {
+                switchTab('scan');
+                history.pushState({ view: 'scan' }, '', ''); // Restore state
+                return;
+            }
+
+            // 3. Root Logic (Tab Scan) - Double press to exit
+            const now = new Date().getTime();
+            if (now - lastBackPressTime < 2000) {
+                // User pressed back twice quickly.
+                // Allow normal back behavior (which exits the app/tab)
+                return; 
+            } else {
+                // First press
+                lastBackPressTime = now;
+                showStatus("Tekan sekali lagi untuk keluar", "loading"); 
+                // Push state again to trap the user in the app
+                history.pushState({ view: 'scan' }, '', ''); 
+            }
+        }
 
         // --- Event Listeners ---
         loginForm.addEventListener('submit', handleLogin);
@@ -672,12 +795,18 @@
             loggedInUsernameEl.textContent = currentUser.username;
             if (currentUser.role === 'Admin') {
                 adminPanel.classList.remove('hidden');
+                // Cek apakah prompt install tersedia
+                if (deferredPrompt) {
+                     installAppBtn.classList.remove('hidden');
+                }
             } else {
                 adminPanel.classList.add('hidden');
             }
             ekspedisiEl.focus();
-            history.pushState(null, '', location.href);
-            window.addEventListener('popstate', handleBackButton);
+            
+            // Initial History State for Back Button Logic
+            history.pushState({ view: 'scan' }, '', '');
+            
             updatePicFilterOptions();
             switchTab('scan'); // Default view
         }
@@ -734,7 +863,6 @@
             localStorage.removeItem('resiAppUser');
             localStorage.removeItem('resiAppCreds');
             currentUser = null;
-            window.removeEventListener('popstate', handleBackButton);
             showLoginApp();
             document.getElementById('username').focus();
             allPicNames.clear();
@@ -909,10 +1037,7 @@
             // CLEANUP PREVIOUS INSTANCE ROBUSTLY
             if (html5QrCode) {
                 try {
-                    // Cek status scanning internal jika ada (tergantung versi library)
-                    // Panggil stop() dan tunggu
                     await html5QrCode.stop().catch(err => {
-                        // Ignore error if stop fails (e.g. not scanning)
                         console.log("Stop failed or not running:", err);
                     });
                     html5QrCode.clear();
@@ -923,7 +1048,6 @@
             }
             
             // Add a delay to allow OS to release camera handle completely
-            // Increased to 500ms to be safer against NotReadableError
             await new Promise(r => setTimeout(r, 500));
 
             try {
@@ -940,7 +1064,6 @@
                     return; 
                 }
                 
-                // FILTER HANYA TERIMA YANG PANJANG (BIASANYA RESI DIATAS 5 KARAKTER)
                 if(decodedText.length < 5) {
                      return; 
                 }
@@ -960,13 +1083,13 @@
 
             const config = { 
                 fps: 20, 
+                // KOTAK SCAN PERSEGI AGAR QR & CODE 128 MASUK
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    let minEdgePercentage = 0.75; 
-                    let qrboxWidth = Math.floor(viewfinderWidth * minEdgePercentage);
-                    let qrboxHeight = Math.floor(qrboxWidth * 0.8); 
+                    // Lebar 80% dari layar
+                    let boxSize = Math.floor(viewfinderWidth * 0.8);
                     return {
-                        width: qrboxWidth,
-                        height: qrboxHeight
+                        width: boxSize,
+                        height: boxSize // Persegi
                     };
                 },
                 formatsToSupport: [ 
@@ -987,7 +1110,6 @@
                 try {
                     await html5QrCode.start(cameraConfig, config, qrCodeSuccessCallback);
                     
-                    // Success block
                     try {
                         const track = html5QrCode.getRunningTrack();
                         if (track) {
@@ -1013,7 +1135,6 @@
                     const errName = err?.name || "Unknown";
                     const errMsg = err?.message || String(err);
                     
-                    // Retry on NotReadableError (hardware busy)
                     if ((errName === 'NotReadableError' || errMsg.includes('NotReadableError') || errMsg.includes('Could not start video source')) && retryCount < 2) {
                         console.log("Camera busy, retrying in 1s...");
                         showStatus(`Kamera sibuk, mencoba lagi (${retryCount + 1}/3)...`, "loading");
@@ -1022,7 +1143,6 @@
                         return;
                     }
 
-                    // Final Error Handling
                     let errorMsg = "Tidak dapat mengakses kamera.";
                     if (errName === 'NotReadableError' || errMsg.includes('NotReadableError')) {
                         errorMsg = "Kamera tidak dapat diakses. Pastikan tidak ada aplikasi lain yang menggunakan kamera, lalu coba lagi.";
@@ -1036,24 +1156,16 @@
                 }
             };
 
-            // Execute start
             attemptStart();
         }
 
         async function stopScanner() {
-            // Force clean up even if busy flag is stuck, but try to respect it if transient
-            // We'll remove the isScannerBusy check here to ensure user can force close if stuck
-            // if (isScannerBusy) return; 
-            
             if (html5QrCode) {
                 try {
                     if (isFlashOn) {
-                        // Try to turn off flash, ignore errors
                         await toggleFlash(true).catch(() => {}); 
                     }
                     
-                    // Always try to stop if library thinks it's scanning
-                    // or just catch error if it wasn't
                     await html5QrCode.stop().catch(e => console.log("Stop ignored:", e));
                     html5QrCode.clear();
                 } catch (err) {
@@ -1363,28 +1475,26 @@
                     }
                     
                     let statusMessage = `Selesai: ${processed.length} resi tersimpan, ${duplicates.length} duplikat.`;
-                    let statusType = duplicates.length > 0 ? "error" : "success"; // Keep error style for visibility if duplicates
+                    let statusType = duplicates.length > 0 ? "error" : "success"; 
 
-                    // 2. Update Summary Card (Client side immediate update)
+                    // 2. Update Summary Card
                     batchSummaryCard.classList.remove('hidden');
                     summaryBatchEl.textContent = processed.length;
                     
-                    // 3. Reset Scan Batch (Silent, so it doesn't overwrite success status)
+                    // 3. Reset Scan Batch
                     resetBatch(true, true); 
 
-                    // 4. SWITCH TAB IMMEDIATELY (This is the key fix)
+                    // 4. SWITCH TAB IMMEDIATELY
                     switchTab('hasil');
                     
-                    // 5. Show Status Message AFTER switching tab so user sees it on result screen
+                    // 5. Show Status Message
                     showStatus(statusMessage, statusType);
 
-                    // 6. Refresh Data in Background (No await)
+                    // 6. Refresh Data in Background
                     isPostSubmit = true; 
                     
-                    // Show a "refreshing" indication in the table
                     logTableBodyEl.innerHTML = `<tr id="initial-log-message"><td colspan="5" class="text-center text-slate-400 italic py-4">Memuat ulang data terbaru...</td></tr>`;
                     
-                    // Fire and forget fetch
                     fetchDailyScans().then(() => {
                         isPostSubmit = false; 
                         filterPicSelectEl.value = 'my-scan';
@@ -1404,7 +1514,6 @@
         }
 
         async function fetchDailyScans() {
-            // Don't show global loading status if it's a background refresh
             if (!isPostSubmit) {
                 showStatus(`Memuat data scan hari ini untuk semua ekspedisi...`, "loading");
             }
